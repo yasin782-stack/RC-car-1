@@ -1,179 +1,204 @@
+const video = document.getElementById("camera");
+const button = document.getElementById("startCamera");
+const statusText = document.getElementById("status");
 
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+
+// ================================
+// CAMERA DIAGNOSTIC
+// ================================
+
+async function startCamera() {
+
+    statusText.innerHTML = "Checking camera...";
+
+    console.log("Starting camera test...");
+
+
+    // Check HTTPS
+    if (!window.isSecureContext) {
+
+        statusText.innerHTML =
+            "❌ NOT SECURE<br>" +
+            "This page must use HTTPS.";
+
+        return;
+    }
+
+
+    // Check browser camera API
+    if (!navigator.mediaDevices) {
+
+        statusText.innerHTML =
+            "❌ Camera API unavailable<br>" +
+            "Your browser may not support camera access.";
+
+        return;
+    }
+
+
+    if (!navigator.mediaDevices.getUserMedia) {
+
+        statusText.innerHTML =
+            "❌ getUserMedia unavailable";
+
+        return;
+    }
+
+
+    statusText.innerHTML =
+        "✅ HTTPS detected<br>" +
+        "✅ Camera API detected<br>" +
+        "Requesting permission...";
+
+
+    try {
+
+        const stream =
+            await navigator.mediaDevices.getUserMedia({
+
+                video: {
+                    facingMode: {
+                        ideal: "environment"
+                    }
+                },
+
+                audio: false
+
+            });
+
+
+        video.srcObject = stream;
+
+        statusText.innerHTML =
+            "✅ CAMERA WORKING!";
+
+        button.textContent =
+            "Camera Running";
+
+        button.disabled = true;
+
+
+        console.log(
+            "Camera stream:",
+            stream
+        );
+
+
+        // Show camera information
+
+        const tracks =
+            stream.getVideoTracks();
+
+        if (tracks.length > 0) {
+
+            console.log(
+                "Camera:",
+                tracks[0].label
+            );
+
+            console.log(
+                "Camera settings:",
+                tracks[0].getSettings()
+            );
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "CAMERA ERROR:",
+            error
+        );
+
+
+        statusText.innerHTML =
+            "❌ CAMERA ERROR<br><br>" +
+            "<b>Name:</b> " +
+            error.name +
+            "<br>" +
+            "<b>Message:</b> " +
+            error.message;
+
+
+        alert(
+            "Camera error\n\n" +
+            "Name: " +
+            error.name +
+            "\n\n" +
+            "Message: " +
+            error.message
+        );
+
+    }
+
 }
 
-body {
-    min-height: 100vh;
-    background: #050505;
-    color: white;
-    font-family: Arial, sans-serif;
-    text-align: center;
+
+// ================================
+// BUTTON
+// ================================
+
+button.addEventListener(
+    "click",
+    startCamera
+);
+
+
+// ================================
+// INITIAL DIAGNOSTICS
+// ================================
+
+console.log(
+    "Secure context:",
+    window.isSecureContext
+);
+
+console.log(
+    "MediaDevices:",
+    navigator.mediaDevices
+);
+
+console.log(
+    "getUserMedia:",
+    navigator.mediaDevices
+        ? navigator.mediaDevices.getUserMedia
+        : "Unavailable"
+);
+
+
+// ================================
+// SPEED GAUGE
+// ================================
+
+const speedText =
+    document.getElementById("speed");
+
+const needle =
+    document.getElementById("needle");
+
+
+function setSpeed(speed) {
+
+    speed =
+        Math.max(
+            0,
+            Math.min(180, speed)
+        );
+
+
+    speedText.textContent =
+        Math.round(speed);
+
+
+    const angle =
+        -120 +
+        (speed / 180) * 240;
+
+
+    needle.style.transform =
+        `rotate(${angle}deg)`;
+
 }
 
-.container {
-    width: 100%;
-    max-width: 700px;
-    margin: auto;
-    padding: 20px;
-}
 
-h1 {
-    margin-bottom: 10px;
-    font-size: 28px;
-}
-
-.status {
-    margin: 10px;
-    color: #aaa;
-}
-
-button {
-    padding: 12px 22px;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    cursor: pointer;
-    margin: 10px;
-}
-
-.camera-container {
-    width: 100%;
-    max-width: 500px;
-    margin: 20px auto;
-    background: #111;
-    border-radius: 15px;
-    overflow: hidden;
-    border: 2px solid #333;
-}
-
-video {
-    width: 100%;
-    display: block;
-}
-
-canvas {
-    display: none;
-}
-
-.dashboard {
-    margin-top: 30px;
-    display: flex;
-    justify-content: center;
-}
-
-.gauge {
-    position: relative;
-    width: 300px;
-    height: 300px;
-    border-radius: 50%;
-
-    background:
-        radial-gradient(circle,
-            #151515 0%,
-            #151515 58%,
-            #222 59%,
-            #050505 70%);
-
-    border: 8px solid #333;
-
-    box-shadow:
-        0 0 20px rgba(255,255,255,0.1),
-        inset 0 0 30px rgba(255,255,255,0.05);
-}
-
-.gauge::before {
-    content: "";
-
-    position: absolute;
-
-    width: 230px;
-    height: 230px;
-
-    left: 27px;
-    top: 27px;
-
-    border-radius: 50%;
-
-    border: 3px solid #444;
-}
-
-.gauge-title {
-    position: absolute;
-
-    width: 100%;
-
-    top: 65px;
-
-    font-size: 18px;
-    letter-spacing: 3px;
-
-    color: #aaa;
-}
-
-.speed {
-    position: absolute;
-
-    width: 100%;
-
-    top: 105px;
-
-    font-size: 55px;
-    font-weight: bold;
-}
-
-.unit {
-    position: absolute;
-
-    width: 100%;
-
-    top: 170px;
-
-    font-size: 15px;
-
-    color: #aaa;
-}
-
-.needle {
-    position: absolute;
-
-    width: 4px;
-    height: 105px;
-
-    background: white;
-
-    left: 148px;
-    top: 45px;
-
-    transform-origin: 50% 105px;
-
-    transform: rotate(-120deg);
-
-    border-radius: 5px;
-
-    transition: transform 0.2s ease;
-}
-
-.center-dot {
-    position: absolute;
-
-    width: 18px;
-    height: 18px;
-
-    background: white;
-
-    border-radius: 50%;
-
-    left: 133px;
-    top: 142px;
-}
-
-.info {
-    margin-top: 25px;
-
-    color: #777;
-
-    font-size: 13px;
-}
+setSpeed(0);
