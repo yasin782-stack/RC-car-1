@@ -9,9 +9,39 @@ const statusText = document.getElementById("status");
 
 async function startCamera() {
 
-    statusText.innerHTML = "Checking camera...";
+    statusText.innerHTML = "Requesting front camera...";
 
-    console.log("Starting camera test...");
+    try {
+
+        const stream =
+            await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: {
+                        exact: "user"
+                    }
+                },
+                audio: false
+            });
+
+        video.srcObject = stream;
+
+        statusText.innerHTML =
+            "✅ FRONT CAMERA WORKING";
+
+        button.textContent = "Front Camera Running";
+        button.disabled = true;
+
+    } catch (error) {
+
+        console.error(error);
+
+        statusText.innerHTML =
+            "❌ Camera Error<br>" +
+            error.name + "<br>" +
+            error.message;
+
+    }
+}
 
 
     // Check HTTPS
