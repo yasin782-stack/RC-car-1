@@ -1,1 +1,117 @@
 
+const video = document.getElementById("camera");
+const button = document.getElementById("startCamera");
+const statusText = document.getElementById("status");
+
+const speedText = document.getElementById("speed");
+const needle = document.getElementById("needle");
+
+
+// ===============================
+// CAMERA
+// ===============================
+
+async function startCamera() {
+
+    try {
+
+        statusText.textContent = "Requesting camera permission...";
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: "environment"
+            },
+            audio: false
+        });
+
+        video.srcObject = stream;
+
+        statusText.textContent = "✅ Camera connected";
+
+        button.textContent = "Camera Running";
+
+        button.disabled = true;
+
+        console.log("Camera started successfully");
+
+    } catch (error) {
+
+        console.error(error);
+
+        statusText.textContent =
+            "❌ Camera error: " + error.message;
+
+        alert(
+            "Camera could not be started.\n\n" +
+            "Make sure you opened this website using HTTPS " +
+            "and allowed camera permission."
+        );
+    }
+}
+
+
+button.addEventListener("click", startCamera);
+
+
+// ===============================
+// SPEED GAUGE
+// ===============================
+
+function setSpeed(speed) {
+
+    // Keep speed between 0 and 180
+    speed = Math.max(0, Math.min(180, speed));
+
+    speedText.textContent = Math.round(speed);
+
+    /*
+        Gauge range:
+
+        0 km/h   = -120 degrees
+        180 km/h = +120 degrees
+    */
+
+    const angle = -120 + (speed / 180) * 240;
+
+    needle.style.transform =
+        `rotate(${angle}deg)`;
+}
+
+
+// ===============================
+// DEMO MODE
+// ===============================
+
+let demoSpeed = 0;
+
+let increasing = true;
+
+function demo() {
+
+    if (increasing) {
+
+        demoSpeed += 1;
+
+        if (demoSpeed >= 180) {
+            increasing = false;
+        }
+
+    } else {
+
+        demoSpeed -= 1;
+
+        if (demoSpeed <= 0) {
+            increasing = true;
+        }
+    }
+
+    setSpeed(demoSpeed);
+}
+
+
+// Run demo every 100 ms
+setInterval(demo, 100);
+
+
+// Initial value
+setSpeed(0);
