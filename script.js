@@ -1,35 +1,59 @@
 const video = document.getElementById("camera");
-const button = document.getElementById("startCamera");
+const startButton = document.getElementById("startCamera");
+const switchButton = document.getElementById("switchCamera");
 const statusText = document.getElementById("status");
+
+let currentStream = null;
+let currentCamera = "user";
 
 
 // ================================
-// CAMERA DIAGNOSTIC
+// START CAMERA
 // ================================
 
 async function startCamera() {
 
-    statusText.innerHTML = "Requesting front camera...";
+    statusText.textContent =
+        "Requesting camera...";
 
     try {
 
+        // Stop previous camera
+        if (currentStream) {
+
+            currentStream
+                .getTracks()
+                .forEach(track => track.stop());
+
+        }
+
+
         const stream =
             await navigator.mediaDevices.getUserMedia({
+
                 video: {
                     facingMode: {
-                        exact: "user"
+                        exact: currentCamera
                     }
                 },
+
                 audio: false
+
             });
+
+
+        currentStream = stream;
 
         video.srcObject = stream;
 
-        statusText.innerHTML =
-            "✅ FRONT CAMERA WORKING";
+        statusText.textContent =
+            currentCamera === "user"
+                ? "✅ FRONT CAMERA"
+                : "✅ BACK CAMERA";
 
-        button.textContent = "Front Camera Running";
-        button.disabled = true;
+        startButton.textContent =
+            "Camera Running";
+
 
     } catch (error) {
 
@@ -44,186 +68,45 @@ async function startCamera() {
 }
 
 
-    // Check HTTPS
-    if (!window.isSecureContext) {
-
-        statusText.innerHTML =
-            "❌ NOT SECURE<br>" +
-            "This page must use HTTPS.";
-
-        return;
-    }
-
-
-    // Check browser camera API
-    if (!navigator.mediaDevices) {
-
-        statusText.innerHTML =
-            "❌ Camera API unavailable<br>" +
-            "Your browser may not support camera access.";
-
-        return;
-    }
-
-
-    if (!navigator.mediaDevices.getUserMedia) {
-
-        statusText.innerHTML =
-            "❌ getUserMedia unavailable";
-
-        return;
-    }
-
-
-    statusText.innerHTML =
-        "✅ HTTPS detected<br>" +
-        "✅ Camera API detected<br>" +
-        "Requesting permission...";
-
-
-    try {
-
-       const stream =
-    await navigator.mediaDevices.getUserMedia({
-        video: {
-            facingMode: "user"
-        },
-        audio: false
-    }); 
-
-
-        video.srcObject = stream;
-
-        statusText.innerHTML =
-            "✅ CAMERA WORKING!";
-
-        button.textContent =
-            "Camera Running";
-
-        button.disabled = true;
-
-
-        console.log(
-            "Camera stream:",
-            stream
-        );
-
-
-        // Show camera information
-
-        const tracks =
-            stream.getVideoTracks();
-
-        if (tracks.length > 0) {
-
-            console.log(
-                "Camera:",
-                tracks[0].label
-            );
-
-            console.log(
-                "Camera settings:",
-                tracks[0].getSettings()
-            );
-        }
-
-
-    } catch (error) {
-
-        console.error(
-            "CAMERA ERROR:",
-            error
-        );
-
-
-        statusText.innerHTML =
-            "❌ CAMERA ERROR<br><br>" +
-            "<b>Name:</b> " +
-            error.name +
-            "<br>" +
-            "<b>Message:</b> " +
-            error.message;
-
-
-        alert(
-            "Camera error\n\n" +
-            "Name: " +
-            error.name +
-            "\n\n" +
-            "Message: " +
-            error.message
-        );
-
-    }
-
-}
-
-
 // ================================
-// BUTTON
+// START BUTTON
 // ================================
 
-button.addEventListener(
+startButton.addEventListener(
     "click",
     startCamera
 );
 
 
 // ================================
-// INITIAL DIAGNOSTICS
+// SWITCH CAMERA
 // ================================
 
-console.log(
-    "Secure context:",
-    window.isSecureContext
+switchButton.addEventListener(
+    "click",
+    async () => {
+
+        if (!currentStream) {
+
+            statusText.textContent =
+                "Start the camera first.";
+
+            return;
+        }
+
+
+        if (currentCamera === "user") {
+
+            currentCamera = "environment";
+
+        } else {
+
+            currentCamera = "user";
+
+        }
+
+
+        await startCamera();
+
+    }
 );
-
-console.log(
-    "MediaDevices:",
-    navigator.mediaDevices
-);
-
-console.log(
-    "getUserMedia:",
-    navigator.mediaDevices
-        ? navigator.mediaDevices.getUserMedia
-        : "Unavailable"
-);
-
-
-// ================================
-// SPEED GAUGE
-// ================================
-
-const speedText =
-    document.getElementById("speed");
-
-const needle =
-    document.getElementById("needle");
-
-
-function setSpeed(speed) {
-
-    speed =
-        Math.max(
-            0,
-            Math.min(180, speed)
-        );
-
-
-    speedText.textContent =
-        Math.round(speed);
-
-
-    const angle =
-        -120 +
-        (speed / 180) * 240;
-
-
-    needle.style.transform =
-        `rotate(${angle}deg)`;
-
-}
-
-
-setSpeed(0);
