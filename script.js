@@ -1,39 +1,703 @@
-const video = document.getElementById("camera");
-const startButton = document.getElementById("startCamera");
-const switchButton = document.getElementById("switchCamera");
-const statusText = document.getElementById("status");
+/* =========================================
+   RC CAR - BLE + CAMERA
+========================================= */
 
-let currentStream = null;
-let currentCamera = "user";
+const SERVICE_UUID =
+    "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+
+const CMD_CHAR_UUID =
+    "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+
+const TELE_CHAR_UUID =
+    "beb5483e-36e1-4688-b7f5-ea07361b26a9";
 
 
-// ================================
-// START CAMERA
-// ================================
+/* =========================================
+   ELEMENTS
+========================================= */
 
-async function startCamera() {
+const statusEl =
+    document.getElementById("status");
 
-    statusText.textContent =
-        "Requesting camera...";
+const connectBtn =
+    document.getElementById("connectBtn");
+
+const fwdBtn =
+    document.getElementById("fwdBtn");
+
+const backBtn =
+    document.getElementById("backBtn");
+
+const ecoBtn =
+    document.getElementById("ecoBtn");
+
+const sportBtn =
+    document.getElementById("sportBtn");
+
+const wheelWrap =
+    document.getElementById("wheelWrap");
+
+const wheel =
+    document.getElementById("wheel");
+
+const distFront =
+    document.getElementById("distFront");
+
+const distRear =
+    document.getElementById("distRear");
+
+const speedNum =
+    document.getElementById("speedNum");
+
+const rpmNum =
+    document.getElementById("rpmNum");
+
+const cameraVideo =
+    document.getElementById("driverCamera");
+
+const cameraState =
+    document.getElementById("cameraState");
+
+const cameraBtn =
+    document.getElementById("cameraBtn");
+
+const switchCameraBtn =
+    document.getElementById("switchCamera");
+
+
+/* =========================================
+   BLE VARIABLES
+========================================= */
+
+let bleDevice = null;
+let bleServer = null;
+let cmdChar = null;
+let teleChar = null;
+
+
+/* =========================================
+   CAMERA VARIABLES
+========================================= */
+
+let cameraStream = null;
+let cameraMode = "user";
+
+
+/* =========================================
+   BLE CONNECT
+========================================= */
+
+connectBtn.addEventListener(
+    "click",
+    connectBLE
+);
+
+
+async function connectBLE() {
+
+    if (!navigator.bluetooth) {
+
+        statusEl.textContent =
+            "Web Bluetooth not supported";
+
+        return;
+    }
+
 
     try {
 
-        // Stop previous camera
-        if (currentStream) {
+        statusEl.textContent =
+            "Searching for ESP32...";
 
-            currentStream
-                .getTracks()
-                .forEach(track => track.stop());
+
+        bleDevice =
+            await navigator.bluetooth.requestDevice({
+
+                filters: [
+                    {
+                        services: [
+                            SERVICE_UUID
+                        ]
+                    }
+                ]
+
+            });
+
+
+        bleDevice.addEventListener(
+            "gattserverdisconnected",
+            onDisconnected
+        );
+
+
+        statusEl.textContent =
+            "Connecting...";
+
+
+        bleServer =
+            await bleDevice.gatt.connect();
+
+
+        const service =
+            await bleServer.getPrimaryService(
+                SERVICE_UUID
+            );
+
+
+        cmdChar =
+            await service.getCharacteristic(
+                CMD_CHAR_UUID
+            );
+
+
+        teleChar =
+            await service.getCharacteristic(
+                TELE_CHAR_UUID
+            );
+
+
+        await teleChar.startNotifications();
+
+
+        teleChar.addEventListener(
+            "characteristicvaluechanged",
+            onTelemetry
+        );
+
+
+        statusEl.textContent =
+            "Connected to " +
+            (bleDevice.name || "ESP32");
+
+        connectBtn.textContent =
+            "Connected";
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        statusEl.textContent =
+            "BLE Error: " +
+            error.message;
+
+    }
+
+}
+
+
+/* =========================================
+   DISCONNECT
+========================================= */
+
+function onDisconnected() {
+
+    statusEl.textContent =
+        "Disconnected";
+
+    connectBtn.textContent =
+        "Connect to Car";
+
+    sendCommand("S");
+
+}
+
+
+/* =========================================
+   SEND BLE COMMAND
+========================================= */
+
+async function sendCommand(command) {
+
+    if (!cmdChar) {
+
+        console.log(
+            "BLE not connected:",
+            command
+        );
+
+        return;
+    }
+
+
+    try {
+
+        const data =
+            new TextEncoder().encode(command);
+
+
+        if (
+            cmdChar.writeValueWithoutResponse
+        ) {
+
+            await cmdChar.writeValueWithoutResponse(
+                data
+            );
+
+        }
+        else {
+
+            await cmdChar.writeValue(
+                data
+            );
 
         }
 
 
-        const stream =
-            await navigator.mediaDevices.getUserMedia({
+        console.log(
+            "Sent:",
+            command
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "BLE send error:",
+            error
+        );
+
+    }
+
+}
+
+
+/* =========================================
+   TELEMETRY FROM ESP32
+========================================= */
+
+function onTelemetry(event) {
+
+    const value =
+        new TextDecoder().decode(
+            event.target.value
+        );
+
+
+    console.log(
+        "ESP32:",
+        value
+    );
+
+
+    /* Distance */
+
+    const distance =
+        value.match(
+            /F:(-?\d+),R:(-?\d+)/
+        );
+
+
+    if (distance) {
+
+        distFront.textContent =
+            distance[1];
+
+        distRear.textContent =
+            distance[2];
+
+    }
+
+
+    /* GPS */
+
+    const gps =
+        value.match(
+            /GPS:(\d)/
+        );
+
+
+    if (gps) {
+
+        console.log(
+            "GPS:",
+            gps[1]
+        );
+
+    }
+
+}
+
+
+/* =========================================
+   ECO MODE
+========================================= */
+
+ecoBtn.addEventListener(
+    "click",
+    () => {
+
+        sendCommand(
+            "MODE:ECO"
+        );
+
+
+        ecoBtn.classList.add(
+            "active"
+        );
+
+
+        sportBtn.classList.remove(
+            "active"
+        );
+
+    }
+);
+
+
+/* =========================================
+   SPORT MODE
+========================================= */
+
+sportBtn.addEventListener(
+    "click",
+    () => {
+
+        sendCommand(
+            "MODE:SPORT"
+        );
+
+
+        sportBtn.classList.add(
+            "active"
+        );
+
+
+        ecoBtn.classList.remove(
+            "active"
+        );
+
+    }
+);
+
+
+/* =========================================
+   FORWARD
+========================================= */
+
+function forwardStart(event) {
+
+    event.preventDefault();
+
+    fwdBtn.classList.add(
+        "active"
+    );
+
+    sendCommand("F");
+
+}
+
+
+function forwardStop(event) {
+
+    event.preventDefault();
+
+    fwdBtn.classList.remove(
+        "active"
+    );
+
+    sendCommand("S");
+
+}
+
+
+fwdBtn.addEventListener(
+    "pointerdown",
+    forwardStart
+);
+
+fwdBtn.addEventListener(
+    "pointerup",
+    forwardStop
+);
+
+fwdBtn.addEventListener(
+    "pointercancel",
+    forwardStop
+);
+
+fwdBtn.addEventListener(
+    "pointerleave",
+    forwardStop
+);
+
+
+/* =========================================
+   BACKWARD
+========================================= */
+
+function backStart(event) {
+
+    event.preventDefault();
+
+    backBtn.classList.add(
+        "active"
+    );
+
+    sendCommand("B");
+
+}
+
+
+function backStop(event) {
+
+    event.preventDefault();
+
+    backBtn.classList.remove(
+        "active"
+    );
+
+    sendCommand("S");
+
+}
+
+
+backBtn.addEventListener(
+    "pointerdown",
+    backStart
+);
+
+backBtn.addEventListener(
+    "pointerup",
+    backStop
+);
+
+backBtn.addEventListener(
+    "pointercancel",
+    backStop
+);
+
+backBtn.addEventListener(
+    "pointerleave",
+    backStop
+);
+
+
+/* =========================================
+   STEERING
+========================================= */
+
+let steering = false;
+let lastSteeringSend = 0;
+
+
+function getSteeringAngle(event) {
+
+    const rect =
+        wheelWrap.getBoundingClientRect();
+
+
+    const centerX =
+        rect.left +
+        rect.width / 2;
+
+
+    const centerY =
+        rect.top +
+        rect.height / 2;
+
+
+    const dx =
+        event.clientX -
+        centerX;
+
+
+    const dy =
+        event.clientY -
+        centerY;
+
+
+    let angle =
+        Math.atan2(
+            dx,
+            -dy
+        ) *
+        180 /
+        Math.PI;
+
+
+    angle =
+        Math.max(
+            -70,
+            Math.min(
+                70,
+                angle
+            )
+        );
+
+
+    return angle;
+
+}
+
+
+function sendSteering(angle) {
+
+    const now =
+        Date.now();
+
+
+    if (
+        now -
+        lastSteeringSend <
+        40
+    ) {
+
+        return;
+
+    }
+
+
+    lastSteeringSend =
+        now;
+
+
+    sendCommand(
+        "L:" +
+        Math.round(angle)
+    );
+
+}
+
+
+function applySteering(angle) {
+
+    wheel.style.transform =
+        `rotate(${angle}deg)`;
+
+    sendSteering(angle);
+
+}
+
+
+wheelWrap.addEventListener(
+    "pointerdown",
+    event => {
+
+        event.preventDefault();
+
+        steering = true;
+
+        wheelWrap.setPointerCapture(
+            event.pointerId
+        );
+
+
+        applySteering(
+            getSteeringAngle(event)
+        );
+
+    }
+);
+
+
+wheelWrap.addEventListener(
+    "pointermove",
+    event => {
+
+        if (!steering)
+            return;
+
+
+        event.preventDefault();
+
+
+        applySteering(
+            getSteeringAngle(event)
+        );
+
+    }
+);
+
+
+function releaseSteering(event) {
+
+    if (!steering)
+        return;
+
+
+    steering = false;
+
+
+    wheel.style.transition =
+        "transform .2s";
+
+
+    wheel.style.transform =
+        "rotate(0deg)";
+
+
+    sendCommand("L:0");
+
+}
+
+
+wheelWrap.addEventListener(
+    "pointerup",
+    releaseSteering
+);
+
+wheelWrap.addEventListener(
+    "pointercancel",
+    releaseSteering
+);
+
+
+/* =========================================
+   CAMERA
+========================================= */
+
+cameraBtn.addEventListener(
+    "click",
+    async () => {
+
+        if (cameraStream) {
+
+            stopCamera();
+
+        }
+        else {
+
+            await startCamera();
+
+        }
+
+    }
+);
+
+
+/* =========================================
+   START CAMERA
+========================================= */
+
+async function startCamera() {
+
+    try {
+
+        cameraState.textContent =
+            "STARTING...";
+
+
+        if (cameraStream) {
+
+            cameraStream
+                .getTracks()
+                .forEach(
+                    track => track.stop()
+                );
+
+        }
+
+
+        cameraStream =
+            await navigator.mediaDevices
+            .getUserMedia({
 
                 video: {
                     facingMode: {
-                        exact: currentCamera
+                        exact: cameraMode
                     }
                 },
 
@@ -42,71 +706,124 @@ async function startCamera() {
             });
 
 
-        currentStream = stream;
-
-        video.srcObject = stream;
-
-        statusText.textContent =
-            currentCamera === "user"
-                ? "✅ FRONT CAMERA"
-                : "✅ BACK CAMERA";
-
-        startButton.textContent =
-            "Camera Running";
+        cameraVideo.srcObject =
+            cameraStream;
 
 
-    } catch (error) {
+        await cameraVideo.play();
+
+
+        if (cameraMode === "user") {
+
+            cameraState.textContent =
+                "FRONT CAMERA";
+
+        }
+        else {
+
+            cameraState.textContent =
+                "BACK CAMERA";
+
+        }
+
+
+        cameraBtn.textContent =
+            "STOP CAMERA";
+
+    }
+
+    catch (error) {
 
         console.error(error);
 
-        statusText.innerHTML =
-            "❌ Camera Error<br>" +
-            error.name + "<br>" +
-            error.message;
+        cameraState.textContent =
+            "CAMERA ERROR: " +
+            error.name;
+
+        cameraStream = null;
 
     }
+
 }
 
 
-// ================================
-// START BUTTON
-// ================================
+/* =========================================
+   STOP CAMERA
+========================================= */
 
-startButton.addEventListener(
-    "click",
-    startCamera
-);
+function stopCamera() {
+
+    if (cameraStream) {
+
+        cameraStream
+            .getTracks()
+            .forEach(
+                track => track.stop()
+            );
+
+    }
 
 
-// ================================
-// SWITCH CAMERA
-// ================================
+    cameraStream = null;
 
-switchButton.addEventListener(
+    cameraVideo.srcObject = null;
+
+    cameraState.textContent =
+        "CAMERA OFF";
+
+    cameraBtn.textContent =
+        "START CAMERA";
+
+}
+
+
+/* =========================================
+   SWITCH CAMERA
+========================================= */
+
+switchCameraBtn.addEventListener(
     "click",
     async () => {
 
-        if (!currentStream) {
+        if (!cameraStream) {
 
-            statusText.textContent =
-                "Start the camera first.";
+            cameraState.textContent =
+                "START CAMERA FIRST";
 
             return;
-        }
-
-
-        if (currentCamera === "user") {
-
-            currentCamera = "environment";
-
-        } else {
-
-            currentCamera = "user";
 
         }
+
+
+        cameraMode =
+            cameraMode === "user"
+            ? "environment"
+            : "user";
 
 
         await startCamera();
+
+    }
+);
+
+
+/* =========================================
+   INITIAL SPEED DISPLAY
+========================================= */
+
+speedNum.textContent = "0";
+rpmNum.textContent = "0";
+
+
+/* =========================================
+   SAFETY STOP WHEN PAGE CLOSES
+========================================= */
+
+window.addEventListener(
+    "beforeunload",
+    () => {
+
+        sendCommand("S");
 
     }
 );
