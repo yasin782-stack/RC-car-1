@@ -1,6 +1,12 @@
-/* =========================================
-   RC CAR - BLE + CAMERA
-========================================= */
+/* =========================================================
+   RC CAR CONTROLLER
+   BLE + CAMERA + STEERING + TELEMETRY
+========================================================= */
+
+
+/* =========================================================
+   BLE UUIDs
+========================================================= */
 
 const SERVICE_UUID =
     "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
@@ -11,10 +17,22 @@ const CMD_CHAR_UUID =
 const TELE_CHAR_UUID =
     "beb5483e-36e1-4688-b7f5-ea07361b26a9";
 
+const MAX_ANGLE = 70;
 
-/* =========================================
-   ELEMENTS
-========================================= */
+
+/* =========================================================
+   BLE VARIABLES
+========================================================= */
+
+let bleDevice = null;
+let bleServer = null;
+let cmdChar = null;
+let teleChar = null;
+
+
+/* =========================================================
+   GET HTML ELEMENTS
+========================================================= */
 
 const statusEl =
     document.getElementById("status");
@@ -65,102 +83,154 @@ const switchCameraBtn =
     document.getElementById("switchCamera");
 
 
-/* =========================================
-   BLE VARIABLES
-========================================= */
-
-let bleDevice = null;
-let bleServer = null;
-let cmdChar = null;
-let teleChar = null;
-
-
-/* =========================================
-   CAMERA VARIABLES
-========================================= */
-
-let cameraStream = null;
-let cameraMode = "user";
-
-
-/* =========================================
-   BLE CONNECT
-========================================= */
+/* =========================================================
+   BLE CONNECT BUTTON
+========================================================= */
 
 connectBtn.addEventListener(
     "click",
     connectBLE
 );
 
-async function sendCommand(command) {
 
-    if (!cmdChar) {
+/* =========================================================
+   CONNECT TO ESP32
+========================================================= */
+
+async function connectBLE() {
+
+    if (!navigator.bluetooth) {
 
         statusEl.textContent =
-            "Not connected";
-
-        console.log(
-            "BLE not connected:",
-            command
-        );
+            "Web Bluetooth not supported";
 
         return;
     }
 
+
     try {
 
-        const data =
-            new TextEncoder().encode(command);
+        statusEl.textContent =
+            "Requesting device...";
 
-        console.log(
-            "Sending to ESP32:",
-            command
+
+        /*
+         * Search for the ESP32 using
+         * the service UUID.
+         */
+
+        bleDevice =
+            await navigator.bluetooth.requestDevice({
+
+                filters: [
+                    {
+                        services: [
+                            SERVICE_UUID
+                        ]
+                    }
+                ]
+
+            });
+
+
+        bleDevice.addEventListener(
+            "gattserverdisconnected",
+            onDisconnected
         );
 
-        if (cmdChar.properties.write) {
 
-            await cmdChar.writeValue(data);
+        statusEl.textContent =
+            "Connecting to ESP32...";
 
-        }
-        else if (
-            cmdChar.properties.writeWithoutResponse
-        ) {
 
-            await cmdChar.writeValueWithoutResponse(
-                data
+        bleServer =
+            await bleDevice.gatt.connect();
+
+
+        const service =
+            await bleServer.getPrimaryService(
+                SERVICE_UUID
             );
 
-        }
-        else {
 
-            throw new Error(
-                "Command characteristic is not writable"
+        cmdChar =
+            await service.getCharacteristic(
+                CMD_CHAR_UUID
             );
 
-        }
+
+        teleChar =
+            await service.getCharacteristic(
+                TELE_CHAR_UUID
+            );
+
 
         console.log(
-            "✅ Sent:",
-            command
+            "Command characteristic:",
+            cmdChar.properties
+        );
+
+
+        console.log(
+            "Telemetry characteristic:",
+            teleChar.properties
+        );
+
+
+        /*
+         * Enable telemetry notifications
+         */
+
+        if (
+            teleChar.properties.notify ||
+            teleChar.properties.indicate
+        ) {
+
+            await teleChar.startNotifications();
+
+            teleChar.addEventListener(
+                "characteristicvaluechanged",
+                onTelemetry
+            );
+
+        }
+
+
+        statusEl.textContent =
+            "Connected to " +
+            (bleDevice.name || "ESP32");
+
+
+        connectBtn.textContent =
+            "CONNECTED";
+
+
+        console.log(
+            "✅ ESP32 connected"
         );
 
     }
+
     catch (error) {
 
         console.error(
-            "❌ BLE send error:",
+            "BLE connection error:",
             error
         );
 
+
         statusEl.textContent =
-            "Send error: " +
+            "BLE Error: " +
             error.message;
+
     }
+
 }
 
-/* =========================================
-   DISCONNECT
-========================================= */
+
+/* =========================================================
+   DISCONNECTED
+========================================================= */
 
 function onDisconnected() {
 
@@ -170,23 +240,29 @@ function onDisconnected() {
     connectBtn.textContent =
         "Connect to Car";
 
-    sendCommand("S");
+
+    bleServer = null;
+    cmdChar = null;
+    teleChar = null;
 
 }
 
 
-/* =========================================
-   SEND BLE COMMAND
-========================================= */
+/* =========================================================
+   SEND COMMAND TO ESP32
+========================================================= */
 
-async function sendCommand(command) {
+async function sendCmd(command) {
 
     if (!cmdChar) {
 
         console.log(
-            "BLE not connected:",
+            "❌ Not connected. Command:",
             command
         );
+
+        statusEl.textContent =
+            "Connect to Car first";
 
         return;
     }
@@ -198,8 +274,32 @@ async function sendCommand(command) {
             new TextEncoder().encode(command);
 
 
+        console.log(
+            "➡️ Sending:",
+            command
+        );
+
+
+        /*
+         * IMPORTANT:
+         *
+         * Try normal WRITE first.
+         * If ESP32 characteristic only supports
+         * WRITE WITHOUT RESPONSE, use that.
+         */
+
         if (
-            cmdChar.writeValueWithoutResponse
+            cmdChar.properties &&
+            cmdChar.properties.write
+        ) {
+
+            await cmdChar.writeValue(data);
+
+        }
+
+        else if (
+            cmdChar.properties &&
+            cmdChar.properties.writeWithoutResponse
         ) {
 
             await cmdChar.writeValueWithoutResponse(
@@ -207,17 +307,18 @@ async function sendCommand(command) {
             );
 
         }
+
         else {
 
-            await cmdChar.writeValue(
-                data
+            throw new Error(
+                "ESP32 command characteristic is not writable"
             );
 
         }
 
 
         console.log(
-            "Sent:",
+            "✅ Sent:",
             command
         );
 
@@ -226,18 +327,23 @@ async function sendCommand(command) {
     catch (error) {
 
         console.error(
-            "BLE send error:",
+            "❌ BLE send error:",
             error
         );
+
+
+        statusEl.textContent =
+            "Send error: " +
+            error.message;
 
     }
 
 }
 
 
-/* =========================================
-   TELEMETRY FROM ESP32
-========================================= */
+/* =========================================================
+   TELEMETRY
+========================================================= */
 
 function onTelemetry(event) {
 
@@ -248,12 +354,15 @@ function onTelemetry(event) {
 
 
     console.log(
-        "ESP32:",
+        "📡 ESP32:",
         value
     );
 
 
-    /* Distance */
+    /*
+     * Example:
+     * F:50,R:80
+     */
 
     const distance =
         value.match(
@@ -272,7 +381,9 @@ function onTelemetry(event) {
     }
 
 
-    /* GPS */
+    /*
+     * GPS telemetry
+     */
 
     const gps =
         value.match(
@@ -283,7 +394,7 @@ function onTelemetry(event) {
     if (gps) {
 
         console.log(
-            "GPS:",
+            "GPS status:",
             gps[1]
         );
 
@@ -292,15 +403,15 @@ function onTelemetry(event) {
 }
 
 
-/* =========================================
+/* =========================================================
    ECO MODE
-========================================= */
+========================================================= */
 
 ecoBtn.addEventListener(
     "click",
     () => {
 
-        sendCommand(
+        sendCmd(
             "MODE:ECO"
         );
 
@@ -318,15 +429,15 @@ ecoBtn.addEventListener(
 );
 
 
-/* =========================================
+/* =========================================================
    SPORT MODE
-========================================= */
+========================================================= */
 
 sportBtn.addEventListener(
     "click",
     () => {
 
-        sendCommand(
+        sendCmd(
             "MODE:SPORT"
         );
 
@@ -344,117 +455,192 @@ sportBtn.addEventListener(
 );
 
 
-/* =========================================
-   FORWARD
-========================================= */
+/* =========================================================
+   SPEED DISPLAY
+========================================================= */
 
-function forwardStart(event) {
+let currentSpeed = 0;
+let targetSpeed = 0;
 
-    event.preventDefault();
+const MAX_SPEED = 120;
+const MAX_RPM = 8000;
 
-    fwdBtn.classList.add(
-        "active"
-    );
+function setTarget(
+    moving
+) {
 
-    sendCommand("F");
+    if (moving) {
 
-}
+        targetSpeed =
+            MAX_SPEED;
 
+    }
 
-function forwardStop(event) {
+    else {
 
-    event.preventDefault();
+        targetSpeed = 0;
 
-    fwdBtn.classList.remove(
-        "active"
-    );
-
-    sendCommand("S");
-
-}
-
-
-fwdBtn.addEventListener(
-    "pointerdown",
-    forwardStart
-);
-
-fwdBtn.addEventListener(
-    "pointerup",
-    forwardStop
-);
-
-fwdBtn.addEventListener(
-    "pointercancel",
-    forwardStop
-);
-
-fwdBtn.addEventListener(
-    "pointerleave",
-    forwardStop
-);
-
-
-/* =========================================
-   BACKWARD
-========================================= */
-
-function backStart(event) {
-
-    event.preventDefault();
-
-    backBtn.classList.add(
-        "active"
-    );
-
-    sendCommand("B");
+    }
 
 }
 
 
-function backStop(event) {
+function updateGauge() {
 
-    event.preventDefault();
+    currentSpeed +=
+        (targetSpeed - currentSpeed)
+        * 0.08;
 
-    backBtn.classList.remove(
-        "active"
+
+    if (
+        Math.abs(
+            targetSpeed -
+            currentSpeed
+        ) < 0.2
+    ) {
+
+        currentSpeed =
+            targetSpeed;
+
+    }
+
+
+    const speed =
+        Math.round(
+            currentSpeed
+        );
+
+
+    const rpm =
+        Math.round(
+            (currentSpeed /
+            MAX_SPEED) *
+            MAX_RPM
+        );
+
+
+    speedNum.textContent =
+        speed;
+
+    rpmNum.textContent =
+        rpm;
+
+
+    requestAnimationFrame(
+        updateGauge
     );
-
-    sendCommand("S");
 
 }
 
 
-backBtn.addEventListener(
-    "pointerdown",
-    backStart
+updateGauge();
+
+
+/* =========================================================
+   FORWARD / BACKWARD
+========================================================= */
+
+function setupPedal(
+    element,
+    command
+) {
+
+    function start(event) {
+
+        event.preventDefault();
+
+
+        element.classList.add(
+            "active"
+        );
+
+
+        sendCmd(
+            command
+        );
+
+
+        setTarget(
+            true
+        );
+
+    }
+
+
+    function stop(event) {
+
+        event.preventDefault();
+
+
+        element.classList.remove(
+            "active"
+        );
+
+
+        sendCmd(
+            "S"
+        );
+
+
+        setTarget(
+            false
+        );
+
+    }
+
+
+    element.addEventListener(
+        "pointerdown",
+        start
+    );
+
+
+    element.addEventListener(
+        "pointerup",
+        stop
+    );
+
+
+    element.addEventListener(
+        "pointercancel",
+        stop
+    );
+
+
+    element.addEventListener(
+        "pointerleave",
+        stop
+    );
+
+}
+
+
+setupPedal(
+    fwdBtn,
+    "F"
 );
 
-backBtn.addEventListener(
-    "pointerup",
-    backStop
-);
 
-backBtn.addEventListener(
-    "pointercancel",
-    backStop
-);
-
-backBtn.addEventListener(
-    "pointerleave",
-    backStop
+setupPedal(
+    backBtn,
+    "B"
 );
 
 
-/* =========================================
+/* =========================================================
    STEERING
-========================================= */
+========================================================= */
 
-let steering = false;
-let lastSteeringSend = 0;
+let dragging =
+    false;
+
+let lastSteeringSend =
+    0;
 
 
-function getSteeringAngle(event) {
+function getSteeringAngle(
+    event
+) {
 
     const rect =
         wheelWrap.getBoundingClientRect();
@@ -484,16 +670,17 @@ function getSteeringAngle(event) {
         Math.atan2(
             dx,
             -dy
-        ) *
+        )
+        *
         180 /
         Math.PI;
 
 
     angle =
         Math.max(
-            -70,
+            -MAX_ANGLE,
             Math.min(
-                70,
+                MAX_ANGLE,
                 angle
             )
         );
@@ -504,11 +691,22 @@ function getSteeringAngle(event) {
 }
 
 
-function sendSteering(angle) {
+/* =========================================================
+   SEND STEERING
+========================================================= */
+
+function sendSteering(
+    angle
+) {
 
     const now =
         Date.now();
 
+
+    /*
+     * Prevent sending
+     * too many BLE packets.
+     */
 
     if (
         now -
@@ -525,7 +723,7 @@ function sendSteering(angle) {
         now;
 
 
-    sendCommand(
+    sendCmd(
         "L:" +
         Math.round(angle)
     );
@@ -533,15 +731,9 @@ function sendSteering(angle) {
 }
 
 
-function applySteering(angle) {
-
-    wheel.style.transform =
-        `rotate(${angle}deg)`;
-
-    sendSteering(angle);
-
-}
-
+/* =========================================================
+   WHEEL TOUCH START
+========================================================= */
 
 wheelWrap.addEventListener(
     "pointerdown",
@@ -549,99 +741,128 @@ wheelWrap.addEventListener(
 
         event.preventDefault();
 
-        steering = true;
+
+        dragging =
+            true;
+
 
         wheelWrap.setPointerCapture(
             event.pointerId
         );
 
 
-        applySteering(
-            getSteeringAngle(event)
+        const angle =
+            getSteeringAngle(
+                event
+            );
+
+
+        wheel.style.transition =
+            "none";
+
+
+        wheel.style.transform =
+            `rotate(${angle}deg)`;
+
+
+        sendSteering(
+            angle
         );
 
     }
 );
 
 
+/* =========================================================
+   WHEEL MOVEMENT
+========================================================= */
+
 wheelWrap.addEventListener(
     "pointermove",
     event => {
 
-        if (!steering)
+        if (!dragging)
             return;
 
 
         event.preventDefault();
 
 
-        applySteering(
-            getSteeringAngle(event)
+        const angle =
+            getSteeringAngle(
+                event
+            );
+
+
+        wheel.style.transform =
+            `rotate(${angle}deg)`;
+
+
+        sendSteering(
+            angle
         );
 
     }
 );
 
 
-function releaseSteering(event) {
+/* =========================================================
+   RELEASE STEERING
+========================================================= */
 
-    if (!steering)
+function releaseWheel(
+    event
+) {
+
+    if (!dragging)
         return;
 
 
-    steering = false;
+    dragging =
+        false;
 
 
     wheel.style.transition =
-        "transform .2s";
+        "transform .2s ease";
 
 
     wheel.style.transform =
         "rotate(0deg)";
 
 
-    sendCommand("L:0");
+    sendCmd(
+        "L:0"
+    );
 
 }
 
 
 wheelWrap.addEventListener(
     "pointerup",
-    releaseSteering
+    releaseWheel
 );
+
 
 wheelWrap.addEventListener(
     "pointercancel",
-    releaseSteering
+    releaseWheel
 );
 
 
-/* =========================================
+/* =========================================================
    CAMERA
-========================================= */
+========================================================= */
 
-cameraBtn.addEventListener(
-    "click",
-    async () => {
+let cameraStream =
+    null;
 
-        if (cameraStream) {
-
-            stopCamera();
-
-        }
-        else {
-
-            await startCamera();
-
-        }
-
-    }
-);
+let cameraMode =
+    "user";
 
 
-/* =========================================
+/* =========================================================
    START CAMERA
-========================================= */
+========================================================= */
 
 async function startCamera() {
 
@@ -651,25 +872,38 @@ async function startCamera() {
             "STARTING...";
 
 
+        /*
+         * Stop previous stream
+         */
+
         if (cameraStream) {
 
             cameraStream
                 .getTracks()
                 .forEach(
-                    track => track.stop()
+                    track =>
+                        track.stop()
                 );
 
         }
 
 
+        /*
+         * Request selected camera
+         */
+
         cameraStream =
-            await navigator.mediaDevices
+            await navigator
+            .mediaDevices
             .getUserMedia({
 
                 video: {
+
                     facingMode: {
-                        exact: cameraMode
+                        exact:
+                            cameraMode
                     }
+
                 },
 
                 audio: false
@@ -684,12 +918,15 @@ async function startCamera() {
         await cameraVideo.play();
 
 
-        if (cameraMode === "user") {
+        if (
+            cameraMode === "user"
+        ) {
 
             cameraState.textContent =
                 "FRONT CAMERA";
 
         }
+
         else {
 
             cameraState.textContent =
@@ -701,26 +938,62 @@ async function startCamera() {
         cameraBtn.textContent =
             "STOP CAMERA";
 
+
+        console.log(
+            "✅ Camera started:",
+            cameraMode
+        );
+
     }
 
     catch (error) {
 
-        console.error(error);
+        console.error(
+            "Camera error:",
+            error
+        );
+
 
         cameraState.textContent =
             "CAMERA ERROR: " +
             error.name;
 
-        cameraStream = null;
+
+        cameraStream =
+            null;
 
     }
 
 }
 
 
-/* =========================================
+/* =========================================================
+   CAMERA BUTTON
+========================================================= */
+
+cameraBtn.addEventListener(
+    "click",
+    async () => {
+
+        if (cameraStream) {
+
+            stopCamera();
+
+        }
+
+        else {
+
+            await startCamera();
+
+        }
+
+    }
+);
+
+
+/* =========================================================
    STOP CAMERA
-========================================= */
+========================================================= */
 
 function stopCamera() {
 
@@ -729,18 +1002,24 @@ function stopCamera() {
         cameraStream
             .getTracks()
             .forEach(
-                track => track.stop()
+                track =>
+                    track.stop()
             );
 
     }
 
 
-    cameraStream = null;
+    cameraStream =
+        null;
 
-    cameraVideo.srcObject = null;
+
+    cameraVideo.srcObject =
+        null;
+
 
     cameraState.textContent =
         "CAMERA OFF";
+
 
     cameraBtn.textContent =
         "START CAMERA";
@@ -748,9 +1027,9 @@ function stopCamera() {
 }
 
 
-/* =========================================
+/* =========================================================
    SWITCH CAMERA
-========================================= */
+========================================================= */
 
 switchCameraBtn.addEventListener(
     "click",
@@ -766,10 +1045,21 @@ switchCameraBtn.addEventListener(
         }
 
 
-        cameraMode =
+        if (
             cameraMode === "user"
-            ? "environment"
-            : "user";
+        ) {
+
+            cameraMode =
+                "environment";
+
+        }
+
+        else {
+
+            cameraMode =
+                "user";
+
+        }
 
 
         await startCamera();
@@ -778,23 +1068,41 @@ switchCameraBtn.addEventListener(
 );
 
 
-/* =========================================
-   INITIAL SPEED DISPLAY
-========================================= */
-
-speedNum.textContent = "0";
-rpmNum.textContent = "0";
-
-
-/* =========================================
-   SAFETY STOP WHEN PAGE CLOSES
-========================================= */
+/* =========================================================
+   SAFETY STOP
+========================================================= */
 
 window.addEventListener(
-    "beforeunload",
+    "pagehide",
     () => {
 
-        sendCommand("S");
+        if (cmdChar) {
+
+            sendCmd(
+                "S"
+            );
+
+        }
 
     }
 );
+
+
+/* =========================================================
+   INITIAL STATUS
+========================================================= */
+
+if (!navigator.bluetooth) {
+
+    statusEl.textContent =
+        "Use Chrome Android for BLE";
+
+}
+
+
+if (!navigator.mediaDevices) {
+
+    cameraState.textContent =
+        "Camera API unavailable";
+
+   }
