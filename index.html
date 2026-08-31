@@ -1,33 +1,1201 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 
-    <title>RC Car Camera Test</title>
+<title>RC Car BLE Control</title>
 
-    <link rel="stylesheet" href="style.css">
+<style>
+*{
+    box-sizing:border-box;
+    user-select:none;
+    touch-action:none;
+}
+
+html,body{
+    margin:0;
+    width:100%;
+    height:100%;
+    background:#000;
+    color:#fff;
+    font-family:Arial,sans-serif;
+    overflow:hidden;
+}
+
+#app{
+    width:100%;
+    height:100%;
+    position:relative;
+    background:
+    radial-gradient(circle at 30% 60%,#0a1f14 0%,#000 55%),
+    radial-gradient(circle at 70% 60%,#0a1522 0%,#000 55%);
+}
+
+/* STATUS */
+
+#statusBox{
+    position:absolute;
+    top:20px;
+    right:20px;
+    z-index:20;
+    text-align:right;
+}
+
+#status{
+    color:#aaa;
+    font-size:12px;
+    margin-bottom:8px;
+}
+
+button{
+    border:0;
+    border-radius:10px;
+    padding:10px 16px;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+#connectBtn{
+    background:#2196F3;
+    color:white;
+}
+
+
+/* CAMERA */
+
+#cameraPanel{
+    position:absolute;
+    right:20px;
+    bottom:20px;
+    width:190px;
+    padding:8px;
+    background:#000e;
+    border:1px solid #444;
+    border-radius:12px;
+    z-index:20;
+    text-align:center;
+}
+
+#driverCamera{
+    width:100%;
+    height:110px;
+    object-fit:cover;
+    border-radius:8px;
+    background:#111;
+    display:block;
+}
+
+#cameraState{
+    font-size:10px;
+    color:#aaa;
+    margin-top:5px;
+}
+
+#cameraBtn,
+#switchCamera{
+    width:100%;
+    margin-top:6px;
+    padding:8px;
+    font-size:10px;
+    background:#2196F3;
+    color:white;
+}
+
+#switchCamera{
+    background:#444;
+}
+
+
+/* GAUGES */
+
+#gaugeRow{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    display:flex;
+    gap:30px;
+}
+
+.gauge{
+    position:relative;
+    width:220px;
+    height:220px;
+    border-radius:50%;
+    border:8px solid #333;
+    background:#111;
+    box-shadow:0 0 25px #111;
+}
+
+.gaugeTitle{
+    position:absolute;
+    top:55px;
+    width:100%;
+    text-align:center;
+    color:#888;
+    font-size:15px;
+    letter-spacing:2px;
+}
+
+.gaugeNumber{
+    position:absolute;
+    top:85px;
+    width:100%;
+    text-align:center;
+    font-size:45px;
+    font-weight:bold;
+}
+
+.gaugeUnit{
+    position:absolute;
+    top:140px;
+    width:100%;
+    text-align:center;
+    color:#888;
+    font-size:12px;
+}
+
+
+/* STEERING */
+
+#wheelWrap{
+    position:absolute;
+    left:30px;
+    bottom:30px;
+    width:200px;
+    height:200px;
+}
+
+#wheel{
+    width:100%;
+    height:100%;
+    border-radius:50%;
+    border:10px solid #555;
+    background:#151515;
+    position:relative;
+}
+
+#wheel:before{
+    content:"";
+    position:absolute;
+    left:50%;
+    top:15%;
+    width:12px;
+    height:70%;
+    transform:translateX(-50%);
+    background:#333;
+}
+
+#wheel:after{
+    content:"";
+    position:absolute;
+    top:50%;
+    left:15%;
+    width:70%;
+    height:12px;
+    transform:translateY(-50%);
+    background:#333;
+}
+
+#hub{
+    position:absolute;
+    left:50%;
+    top:50%;
+    width:60px;
+    height:60px;
+    transform:translate(-50%,-50%);
+    border-radius:50%;
+    background:#222;
+    border:4px solid #777;
+}
+
+
+/* PEDALS */
+
+#pedalStack{
+    position:absolute;
+    right:230px;
+    bottom:30px;
+    display:flex;
+    flex-direction:column;
+    gap:15px;
+}
+
+.pedal{
+    width:70px;
+    height:120px;
+    border-radius:12px;
+    background:linear-gradient(#bbb,#444);
+    color:#111;
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+    padding-top:10px;
+    font-weight:bold;
+}
+
+.pedal.active{
+    box-shadow:0 0 20px #4CAF50;
+}
+
+
+/* MODE */
+
+#modeToggle{
+    position:absolute;
+    top:20px;
+    left:50%;
+    transform:translateX(-50%);
+    display:flex;
+    gap:5px;
+    z-index:20;
+    background:#111;
+    padding:5px;
+    border-radius:10px;
+}
+
+.modeBtn{
+    background:#222;
+    color:#888;
+}
+
+.modeBtn.active{
+    background:#4CAF50;
+    color:white;
+}
+
+
+/* TELEMETRY */
+
+#distCircle{
+    position:absolute;
+    top:20px;
+    left:20px;
+    width:120px;
+    height:120px;
+    border-radius:50%;
+    border:2px solid #333;
+    background:#111;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+}
+
+.distVal{
+    font-size:20px;
+    font-weight:bold;
+}
+
+.distLabel{
+    color:#777;
+    font-size:9px;
+}
+
+#distFront{
+    color:#4CAF50;
+}
+
+#distRear{
+    color:#29b6f6;
+}
+
+
+/* LANDSCAPE */
+
+#rotatePrompt{
+    display:none;
+}
+
+@media(max-width:700px){
+    #gaugeRow{
+        transform:translate(-50%,-45%) scale(.75);
+    }
+
+    #wheelWrap{
+        width:150px;
+        height:150px;
+    }
+
+    #pedalStack{
+        right:20px;
+    }
+
+    #cameraPanel{
+        width:150px;
+    }
+}
+</style>
 </head>
 
 <body>
 
-    <h1>🚗 RC Car Camera Test</h1>
+<div id="app">
 
-    <p id="status">Camera not started</p>
+    <!-- DISTANCE -->
 
-    <button id="startCamera">
-        📷 Start Camera
-    </button>
+    <div id="distCircle">
 
-    <button id="switchCamera">
-        🔄 Switch Camera
-    </button>
+        <div class="distVal">
+            <span id="distFront">--</span>
+        </div>
 
-    <video id="camera" autoplay playsinline></video>
+        <div class="distLabel">
+            FRONT CM
+        </div>
 
-    <script src="script.js"></script>
+        <div class="distVal">
+            <span id="distRear">--</span>
+        </div>
+
+        <div class="distLabel">
+            REAR CM
+        </div>
+
+    </div>
+
+
+    <!-- BLE -->
+
+    <div id="statusBox">
+
+        <div id="status">
+            Not connected
+        </div>
+
+        <button id="connectBtn">
+            Connect to Car
+        </button>
+
+    </div>
+
+
+    <!-- MODE -->
+
+    <div id="modeToggle">
+
+        <button
+            class="modeBtn active"
+            id="ecoBtn">
+            ECO
+        </button>
+
+        <button
+            class="modeBtn"
+            id="sportBtn">
+            SPORT
+        </button>
+
+    </div>
+
+
+    <!-- GAUGES -->
+
+    <div id="gaugeRow">
+
+        <div class="gauge">
+
+            <div class="gaugeTitle">
+                SPEED
+            </div>
+
+            <div
+                class="gaugeNumber"
+                id="speedNum">
+                0
+            </div>
+
+            <div class="gaugeUnit">
+                KM/H
+            </div>
+
+        </div>
+
+
+        <div class="gauge">
+
+            <div class="gaugeTitle">
+                RPM
+            </div>
+
+            <div
+                class="gaugeNumber"
+                id="rpmNum">
+                0
+            </div>
+
+            <div class="gaugeUnit">
+                RPM
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- STEERING -->
+
+    <div id="wheelWrap">
+
+        <div id="wheel">
+
+            <div id="hub"></div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PEDALS -->
+
+    <div id="pedalStack">
+
+        <div
+            class="pedal"
+            id="fwdBtn">
+            FWD
+        </div>
+
+        <div
+            class="pedal"
+            id="backBtn">
+            BACK
+        </div>
+
+    </div>
+
+
+    <!-- CAMERA -->
+
+    <div id="cameraPanel">
+
+        <video
+            id="driverCamera"
+            autoplay
+            playsinline
+            muted>
+        </video>
+
+        <div id="cameraState">
+            CAMERA OFF
+        </div>
+
+        <button id="cameraBtn">
+            START CAMERA
+        </button>
+
+        <button id="switchCamera">
+            SWITCH CAMERA
+        </button>
+
+    </div>
+
+</div>
+
+
+<script>
+
+/* =====================================
+   BLE UUID
+===================================== */
+
+const SERVICE_UUID =
+'4fafc201-1fb5-459e-8fcc-c5c9c331914b';
+
+const CMD_CHAR_UUID =
+'beb5483e-36e1-4688-b7f5-ea07361b26a8';
+
+const TELE_CHAR_UUID =
+'beb5483e-36e1-4688-b7f5-ea07361b26a9';
+
+
+let bleDevice = null;
+let bleServer = null;
+let cmdChar = null;
+let teleChar = null;
+
+
+/* =====================================
+   BLE STATUS
+===================================== */
+
+const statusEl =
+document.getElementById("status");
+
+
+/* =====================================
+   CONNECT
+===================================== */
+
+document
+.getElementById("connectBtn")
+.addEventListener("click", connectBLE);
+
+
+async function connectBLE(){
+
+    if(!navigator.bluetooth){
+
+        statusEl.textContent =
+        "Web Bluetooth not supported";
+
+        return;
+    }
+
+
+    try{
+
+        statusEl.textContent =
+        "Searching for ESP32...";
+
+
+        bleDevice =
+        await navigator.bluetooth.requestDevice({
+
+            filters:[
+                {
+                    services:[
+                        SERVICE_UUID
+                    ]
+                }
+            ]
+
+        });
+
+
+        bleDevice.addEventListener(
+            "gattserverdisconnected",
+            disconnected
+        );
+
+
+        statusEl.textContent =
+        "Connecting...";
+
+
+        bleServer =
+        await bleDevice.gatt.connect();
+
+
+        const service =
+        await bleServer.getPrimaryService(
+            SERVICE_UUID
+        );
+
+
+        cmdChar =
+        await service.getCharacteristic(
+            CMD_CHAR_UUID
+        );
+
+
+        teleChar =
+        await service.getCharacteristic(
+            TELE_CHAR_UUID
+        );
+
+
+        await teleChar.startNotifications();
+
+
+        teleChar.addEventListener(
+            "characteristicvaluechanged",
+            telemetryReceived
+        );
+
+
+        statusEl.textContent =
+        "Connected: " +
+        (bleDevice.name || "ESP32");
+
+    }
+
+    catch(error){
+
+        console.error(error);
+
+        statusEl.textContent =
+        "BLE Error: " +
+        error.message;
+    }
+}
+
+
+/* =====================================
+   DISCONNECT
+===================================== */
+
+function disconnected(){
+
+    statusEl.textContent =
+    "Disconnected";
+
+    sendCommand("S");
+
+}
+
+
+/* =====================================
+   SEND COMMAND
+===================================== */
+
+async function sendCommand(command){
+
+    if(!cmdChar){
+
+        console.log(
+            "BLE not connected:",
+            command
+        );
+
+        return;
+    }
+
+
+    try{
+
+        const data =
+        new TextEncoder()
+        .encode(command);
+
+
+        if(
+            cmdChar.writeValueWithoutResponse
+        ){
+
+            await cmdChar
+            .writeValueWithoutResponse(data);
+
+        }
+        else{
+
+            await cmdChar
+            .writeValue(data);
+
+        }
+
+    }
+
+    catch(error){
+
+        console.error(
+            "BLE send error:",
+            error
+        );
+
+    }
+}
+
+
+/* =====================================
+   TELEMETRY
+===================================== */
+
+function telemetryReceived(event){
+
+    const value =
+    new TextDecoder()
+    .decode(event.target.value);
+
+
+    console.log(
+        "ESP32:",
+        value
+    );
+
+
+    const distance =
+    value.match(
+        /F:(-?\d+),R:(-?\d+)/
+    );
+
+
+    if(distance){
+
+        document
+        .getElementById("distFront")
+        .textContent =
+        distance[1];
+
+
+        document
+        .getElementById("distRear")
+        .textContent =
+        distance[2];
+
+    }
+
+}
+
+
+/* =====================================
+   ECO / SPORT
+===================================== */
+
+const ecoBtn =
+document.getElementById("ecoBtn");
+
+const sportBtn =
+document.getElementById("sportBtn");
+
+
+ecoBtn.addEventListener(
+"click",
+()=>{
+
+    sendCommand("MODE:ECO");
+
+    ecoBtn.classList.add("active");
+
+    sportBtn.classList.remove("active");
+
+});
+
+
+sportBtn.addEventListener(
+"click",
+()=>{
+
+    sendCommand("MODE:SPORT");
+
+    sportBtn.classList.add("active");
+
+    ecoBtn.classList.remove("active");
+
+});
+
+
+/* =====================================
+   FORWARD / BACK
+===================================== */
+
+function setupPedal(
+    element,
+    command
+){
+
+    element.addEventListener(
+        "pointerdown",
+        event=>{
+
+            event.preventDefault();
+
+            element.classList.add(
+                "active"
+            );
+
+            sendCommand(command);
+
+        }
+    );
+
+
+    const stop =
+    event=>{
+
+        event.preventDefault();
+
+        element.classList.remove(
+            "active"
+        );
+
+        sendCommand("S");
+
+    };
+
+
+    element.addEventListener(
+        "pointerup",
+        stop
+    );
+
+    element.addEventListener(
+        "pointercancel",
+        stop
+    );
+
+    element.addEventListener(
+        "pointerleave",
+        stop
+    );
+
+}
+
+
+setupPedal(
+    document.getElementById("fwdBtn"),
+    "F"
+);
+
+
+setupPedal(
+    document.getElementById("backBtn"),
+    "B"
+);
+
+
+/* =====================================
+   STEERING
+===================================== */
+
+const wheelWrap =
+document.getElementById("wheelWrap");
+
+const wheel =
+document.getElementById("wheel");
+
+
+let steering = false;
+
+let lastSteeringSend = 0;
+
+
+function getSteeringAngle(event){
+
+    const rect =
+    wheelWrap.getBoundingClientRect();
+
+
+    const centerX =
+    rect.left +
+    rect.width / 2;
+
+
+    const centerY =
+    rect.top +
+    rect.height / 2;
+
+
+    const dx =
+    event.clientX -
+    centerX;
+
+
+    const dy =
+    event.clientY -
+    centerY;
+
+
+    let angle =
+    Math.atan2(
+        dx,
+        -dy
+    ) *
+    180 /
+    Math.PI;
+
+
+    angle =
+    Math.max(
+        -70,
+        Math.min(
+            70,
+            angle
+        )
+    );
+
+
+    return angle;
+
+}
+
+
+function sendSteering(angle){
+
+    const now =
+    Date.now();
+
+
+    if(
+        now -
+        lastSteeringSend
+        >
+        40
+    ){
+
+        lastSteeringSend =
+        now;
+
+
+        sendCommand(
+            "L:" +
+            Math.round(angle)
+        );
+
+    }
+
+}
+
+
+wheelWrap.addEventListener(
+"pointerdown",
+event=>{
+
+    event.preventDefault();
+
+    steering = true;
+
+    wheelWrap.setPointerCapture(
+        event.pointerId
+    );
+
+
+    const angle =
+    getSteeringAngle(event);
+
+
+    wheel.style.transform =
+    `rotate(${angle}deg)`;
+
+
+    sendSteering(angle);
+
+});
+
+
+wheelWrap.addEventListener(
+"pointermove",
+event=>{
+
+    if(!steering)
+        return;
+
+
+    event.preventDefault();
+
+
+    const angle =
+    getSteeringAngle(event);
+
+
+    wheel.style.transform =
+    `rotate(${angle}deg)`;
+
+
+    sendSteering(angle);
+
+});
+
+
+function releaseSteering(event){
+
+    if(!steering)
+        return;
+
+
+    steering = false;
+
+
+    wheel.style.transition =
+    "transform .2s";
+
+
+    wheel.style.transform =
+    "rotate(0deg)";
+
+
+    sendCommand("L:0");
+
+}
+
+
+wheelWrap.addEventListener(
+"pointerup",
+releaseSteering
+);
+
+
+wheelWrap.addEventListener(
+"pointercancel",
+releaseSteering
+);
+
+
+/* =====================================
+   CAMERA
+===================================== */
+
+const cameraVideo =
+document.getElementById(
+    "driverCamera"
+);
+
+const cameraBtn =
+document.getElementById(
+    "cameraBtn"
+);
+
+const switchCameraBtn =
+document.getElementById(
+    "switchCamera"
+);
+
+const cameraState =
+document.getElementById(
+    "cameraState"
+);
+
+
+let cameraStream = null;
+
+let cameraMode = "user";
+
+
+/* =====================================
+   START CAMERA
+===================================== */
+
+async function startCamera(){
+
+    try{
+
+        cameraState.textContent =
+        "STARTING...";
+
+
+        if(cameraStream){
+
+            cameraStream
+            .getTracks()
+            .forEach(
+                track=>track.stop()
+            );
+
+        }
+
+
+        cameraStream =
+        await navigator
+        .mediaDevices
+        .getUserMedia({
+
+            video:{
+                facingMode:{
+                    exact:cameraMode
+                }
+            },
+
+            audio:false
+
+        });
+
+
+        cameraVideo.srcObject =
+        cameraStream;
+
+
+        await cameraVideo.play();
+
+
+        cameraState.textContent =
+        cameraMode === "user"
+        ? "FRONT CAMERA"
+        : "BACK CAMERA";
+
+
+        cameraBtn.textContent =
+        "STOP CAMERA";
+
+    }
+
+    catch(error){
+
+        console.error(error);
+
+        cameraState.textContent =
+        "CAMERA ERROR: " +
+        error.name;
+
+    }
+
+}
+
+
+/* =====================================
+   CAMERA BUTTON
+===================================== */
+
+cameraBtn.addEventListener(
+"click",
+async()=>{
+
+    if(cameraStream){
+
+        cameraStream
+        .getTracks()
+        .forEach(
+            track=>track.stop()
+        );
+
+
+        cameraStream =
+        null;
+
+
+        cameraVideo.srcObject =
+        null;
+
+
+        cameraState.textContent =
+        "CAMERA OFF";
+
+
+        cameraBtn.textContent =
+        "START CAMERA";
+
+
+        return;
+
+    }
+
+
+    await startCamera();
+
+});
+
+
+/* =====================================
+   SWITCH CAMERA
+===================================== */
+
+switchCameraBtn.addEventListener(
+"click",
+async()=>{
+
+    if(!cameraStream){
+
+        cameraState.textContent =
+        "START CAMERA FIRST";
+
+        return;
+
+    }
+
+
+    cameraMode =
+    cameraMode === "user"
+    ? "environment"
+    : "user";
+
+
+    await startCamera();
+
+});
+
+
+/* =====================================
+   INITIAL
+===================================== */
+
+if(!navigator.bluetooth){
+
+    statusEl.textContent =
+    "Use Chrome on Android for BLE";
+
+}
+
+</script>
 
 </body>
-
-</html>
+    </html>
