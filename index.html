@@ -1,1 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <title>Car Dashboard</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>🚗 Car Dashboard</h1>
+
+        <p class="status" id="status">
+            Camera not started
+        </p>
+
+        <button id="startCamera">
+            📷 Start Camera
+        </button>
+
+        <div class="camera-container">
+            <video id="camera" autoplay playsinline></video>
+        </div>
+
+        <canvas id="canvas"></canvas>
+
+        <div class="dashboard">
+
+            <div class="gauge">
+
+                <div class="gauge-title">
+                    SPEED
+                </div>
+
+                <div class="speed" id="speed">
+                    0
+                </div>
+
+                <div class="unit">
+                    km/h
+                </div>
+
+                <div class="needle" id="needle"></div>
+
+                <div class="center-dot"></div>
+
+            </div>
+
+        </div>
+
+        <p class="info">
+            Camera test mode — no car connection required.
+        </p>
+
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+</html>
