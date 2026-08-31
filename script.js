@@ -92,100 +92,71 @@ connectBtn.addEventListener(
     connectBLE
 );
 
+async function sendCommand(command) {
 
-async function connectBLE() {
-
-    if (!navigator.bluetooth) {
+    if (!cmdChar) {
 
         statusEl.textContent =
-            "Web Bluetooth not supported";
+            "Not connected";
+
+        console.log(
+            "BLE not connected:",
+            command
+        );
 
         return;
     }
 
-
     try {
 
-        statusEl.textContent =
-            "Searching for ESP32...";
+        const data =
+            new TextEncoder().encode(command);
 
-
-        bleDevice =
-            await navigator.bluetooth.requestDevice({
-
-                filters: [
-                    {
-                        services: [
-                            SERVICE_UUID
-                        ]
-                    }
-                ]
-
-            });
-
-
-        bleDevice.addEventListener(
-            "gattserverdisconnected",
-            onDisconnected
+        console.log(
+            "Sending to ESP32:",
+            command
         );
 
+        if (cmdChar.properties.write) {
 
-        statusEl.textContent =
-            "Connecting...";
+            await cmdChar.writeValue(data);
 
+        }
+        else if (
+            cmdChar.properties.writeWithoutResponse
+        ) {
 
-        bleServer =
-            await bleDevice.gatt.connect();
-
-
-        const service =
-            await bleServer.getPrimaryService(
-                SERVICE_UUID
+            await cmdChar.writeValueWithoutResponse(
+                data
             );
 
+        }
+        else {
 
-        cmdChar =
-            await service.getCharacteristic(
-                CMD_CHAR_UUID
+            throw new Error(
+                "Command characteristic is not writable"
             );
 
+        }
 
-        teleChar =
-            await service.getCharacteristic(
-                TELE_CHAR_UUID
-            );
-
-
-        await teleChar.startNotifications();
-
-
-        teleChar.addEventListener(
-            "characteristicvaluechanged",
-            onTelemetry
+        console.log(
+            "✅ Sent:",
+            command
         );
-
-
-        statusEl.textContent =
-            "Connected to " +
-            (bleDevice.name || "ESP32");
-
-        connectBtn.textContent =
-            "Connected";
 
     }
-
     catch (error) {
 
-        console.error(error);
+        console.error(
+            "❌ BLE send error:",
+            error
+        );
 
         statusEl.textContent =
-            "BLE Error: " +
+            "Send error: " +
             error.message;
-
     }
-
 }
-
 
 /* =========================================
    DISCONNECT
