@@ -15,6 +15,10 @@ user-scalable=no">
 
 <style>
 
+/* =====================================================
+   GLOBAL
+===================================================== */
+
 *{
     box-sizing:border-box;
     user-select:none;
@@ -22,88 +26,173 @@ user-scalable=no">
     touch-action:none;
 }
 
-html,body{
+html,
+body{
     margin:0;
     width:100%;
     height:100%;
     background:#000;
     color:#fff;
-    font-family:Arial,sans-serif;
+    font-family:Arial,Helvetica,sans-serif;
     overflow:hidden;
 }
+
+button,
+input{
+    font-family:inherit;
+}
+
+
+/* =====================================================
+   MAIN APP
+===================================================== */
 
 #app{
     position:relative;
     width:100%;
     height:100%;
+    overflow:hidden;
 
     background:
     radial-gradient(
-        circle at 30% 60%,
-        #0a1f14 0%,
-        #000 55%
-    ),
-    radial-gradient(
-        circle at 70% 60%,
-        #0a1522 0%,
-        #000 55%
+        ellipse at 50% 65%,
+        #102015 0%,
+        #050806 25%,
+        #000 70%
     );
 
-    transition:background .25s ease;
+    transition:background .3s ease;
 }
 
 #app.sport{
     background:
     radial-gradient(
-        circle at 30% 60%,
-        #24100d 0%,
-        #000 55%
-    ),
-    radial-gradient(
-        circle at 70% 60%,
-        #210808 0%,
-        #000 55%
+        ellipse at 50% 65%,
+        #25100d 0%,
+        #090303 30%,
+        #000 70%
     );
 }
 
 
 /* =====================================================
-   BLE
+   TOP STATUS BAR
+===================================================== */
+
+#infoBar{
+    position:absolute;
+
+    top:10px;
+    left:50%;
+
+    transform:translateX(-50%);
+
+    display:flex;
+    align-items:center;
+    gap:25px;
+
+    padding:7px 22px;
+
+    background:rgba(5,5,5,.82);
+
+    border:1px solid #292929;
+    border-radius:15px;
+
+    box-shadow:
+    0 0 20px rgba(0,0,0,.7);
+
+    z-index:50;
+
+    font-size:9px;
+
+    white-space:nowrap;
+}
+
+#infoBar .item{
+    display:flex;
+    align-items:center;
+    gap:6px;
+
+    color:#aaa;
+}
+
+#infoBar .dot{
+    width:9px;
+    height:9px;
+
+    border-radius:50%;
+
+    background:#444;
+}
+
+#infoBar .dot.ok{
+    background:#4CAF50;
+
+    box-shadow:
+    0 0 8px #4CAF50;
+}
+
+#infoBar .dot.bad{
+    background:#f44336;
+
+    box-shadow:
+    0 0 8px #f44336;
+}
+
+
+/* =====================================================
+   CONNECTION
 ===================================================== */
 
 #statusBox{
     position:absolute;
 
-    top:8px;
-    right:10px;
+    top:10px;
+    right:12px;
 
-    z-index:40;
+    width:175px;
 
-    text-align:right;
+    padding:9px;
+
+    background:rgba(5,5,5,.88);
+
+    border:1px solid #292929;
+    border-radius:13px;
+
+    z-index:60;
+
+    box-shadow:
+    0 0 20px rgba(0,0,0,.7);
 }
 
 #status{
-    font-size:9px;
+    font-size:10px;
 
-    color:#aaa;
+    color:#4CAF50;
 
-    margin-bottom:4px;
-
-    max-width:180px;
+    margin-bottom:3px;
 }
 
 #connectBtn{
-    padding:7px 12px;
+    width:100%;
 
-    font-size:10px;
+    padding:7px;
 
     border:0;
 
-    border-radius:9px;
+    border-radius:7px;
 
-    background:#2196F3;
+    background:
+    linear-gradient(
+        #1684e8,
+        #0756a7
+    );
 
     color:#fff;
+
+    font-size:9px;
+
+    font-weight:bold;
 }
 
 
@@ -114,130 +203,85 @@ html,body{
 #distCircle{
     position:absolute;
 
-    top:8px;
-    left:10px;
+    top:10px;
+    left:12px;
 
-    width:72px;
-    height:72px;
+    width:110px;
+    height:110px;
 
     border-radius:50%;
 
-    border:2px solid #333;
+    background:
+    radial-gradient(
+        circle,
+        #111 45%,
+        #070707 100%
+    );
 
-    background:#111;
+    border:2px solid #245f38;
+
+    box-shadow:
+    0 0 18px rgba(76,175,80,.15);
+
+    z-index:40;
 
     display:flex;
 
     flex-direction:column;
 
-    align-items:center;
-
     justify-content:center;
 
-    z-index:20;
+    align-items:center;
 }
 
 .distVal{
-    font-size:12px;
+    font-size:18px;
+
+    line-height:20px;
 
     font-weight:bold;
-
-    line-height:13px;
 }
 
 .distLabel{
-    font-size:6px;
+    font-size:7px;
 
     color:#777;
 
-    margin-bottom:2px;
+    margin-bottom:3px;
 }
 
 #distFront{
     color:#4CAF50;
+
+    text-shadow:
+    0 0 7px rgba(76,175,80,.5);
 }
 
 #distRear{
     color:#29b6f6;
+
+    text-shadow:
+    0 0 7px rgba(41,182,246,.5);
 }
 
 
 /* =====================================================
-   GPS / GSM / SMS
+   GPS
 ===================================================== */
-
-#infoBar{
-    position:absolute;
-
-    top:8px;
-    left:50%;
-
-    transform:translateX(-50%);
-
-    display:flex;
-
-    gap:8px;
-
-    background:#000d;
-
-    border:1px solid #333;
-
-    border-radius:9px;
-
-    padding:5px 8px;
-
-    z-index:25;
-
-    font-size:7px;
-
-    white-space:nowrap;
-}
-
-#infoBar .item{
-    display:flex;
-
-    align-items:center;
-
-    gap:3px;
-}
-
-#infoBar .dot{
-    width:7px;
-    height:7px;
-
-    border-radius:50%;
-
-    background:#555;
-}
-
-#infoBar .dot.ok{
-    background:#4CAF50;
-
-    box-shadow:
-    0 0 6px #4CAF50;
-}
-
-#infoBar .dot.bad{
-    background:#f44336;
-
-    box-shadow:
-    0 0 6px #f44336;
-}
 
 #coords{
     position:absolute;
 
-    top:30px;
-
+    top:47px;
     left:50%;
 
     transform:translateX(-50%);
 
-    z-index:20;
-
-    font-size:7px;
-
     color:#777;
+
+    font-size:8px;
+
+    z-index:40;
 
     white-space:nowrap;
 }
@@ -251,29 +295,29 @@ html,body{
 #smsBtn{
     position:absolute;
 
-    top:43px;
+    top:75px;
 
-    z-index:30;
+    z-index:45;
 
-    padding:5px 8px;
+    border:1px solid #333;
 
-    font-size:7px;
+    background:#111;
 
-    border:0;
+    color:#ddd;
 
-    border-radius:6px;
+    border-radius:7px;
 
-    background:#222;
+    padding:6px 10px;
 
-    color:#fff;
+    font-size:8px;
 }
 
 #gpsReqBtn{
-    left:65px;
+    left:135px;
 }
 
 #smsBtn{
-    left:10px;
+    left:12px;
 }
 
 
@@ -286,65 +330,68 @@ html,body{
 
     position:absolute;
 
-    top:68px;
+    top:108px;
+    left:12px;
 
-    left:50%;
+    z-index:70;
 
-    transform:translateX(-50%);
+    width:245px;
 
-    z-index:50;
+    padding:10px;
 
-    align-items:center;
+    background:rgba(5,5,5,.95);
 
-    gap:5px;
+    border:1px solid #333;
 
-    background:#000e;
-
-    border:1px solid #444;
-
-    border-radius:8px;
-
-    padding:6px;
+    border-radius:12px;
 }
 
 #msgPanel.open{
-    display:flex;
+    display:block;
 }
 
 #msgInput{
-    width:130px;
+    width:100%;
 
-    font-size:9px;
+    padding:8px;
 
     background:#111;
 
-    color:#fff;
-
     border:1px solid #444;
 
-    border-radius:5px;
+    border-radius:7px;
 
-    padding:5px;
+    color:#fff;
+
+    font-size:9px;
 }
 
 #msgSendBtn{
-    font-size:8px;
+    margin-top:6px;
 
-    padding:5px 8px;
+    width:100%;
+
+    padding:7px;
 
     border:0;
 
-    border-radius:5px;
+    border-radius:7px;
 
     background:#4CAF50;
 
     color:#fff;
+
+    font-size:9px;
+
+    font-weight:bold;
 }
 
 #msgStatus{
+    margin-top:5px;
+
     font-size:7px;
 
-    color:#aaa;
+    color:#888;
 }
 
 
@@ -355,51 +402,58 @@ html,body{
 #modeToggle{
     position:absolute;
 
-    top:43px;
-
+    top:78px;
     left:50%;
 
     transform:translateX(-50%);
 
     display:flex;
 
-    gap:3px;
+    gap:5px;
+
+    padding:4px;
 
     background:#111;
 
     border:1px solid #333;
 
-    padding:3px;
+    border-radius:10px;
 
-    border-radius:8px;
-
-    z-index:30;
+    z-index:50;
 }
 
 .modeBtn{
-    padding:5px 10px;
-
-    font-size:9px;
+    padding:7px 18px;
 
     border:0;
 
-    border-radius:6px;
+    border-radius:7px;
 
-    background:#222;
+    background:#1a1a1a;
 
-    color:#888;
+    color:#777;
+
+    font-size:9px;
+
+    font-weight:bold;
 }
 
 #ecoBtn.active{
-    background:#4CAF50;
+    background:#218b32;
 
     color:#fff;
+
+    box-shadow:
+    0 0 10px rgba(76,175,80,.35);
 }
 
 #sportBtn.active{
-    background:#f44336;
+    background:#b51e1e;
 
     color:#fff;
+
+    box-shadow:
+    0 0 10px rgba(244,67,54,.35);
 }
 
 
@@ -410,48 +464,68 @@ html,body{
 #gaugeRow{
     position:absolute;
 
-    top:43%;
-
-    left:22%;
+    top:41%;
+    left:38%;
 
     transform:
     translate(-50%,-50%);
 
     display:flex;
 
-    gap:8px;
+    gap:15px;
 
-    z-index:5;
+    z-index:15;
 }
 
 .gauge{
     position:relative;
 
-    width:105px;
-    height:105px;
+    width:135px;
+    height:135px;
 
     border-radius:50%;
 
-    border:5px solid #333;
+    background:
+    radial-gradient(
+        circle,
+        #111 45%,
+        #050505 70%,
+        #000 100%
+    );
 
-    background:#111;
+    border:5px solid #252525;
 
     box-shadow:
-    0 0 12px #111;
+    inset 0 0 15px #000,
+    0 0 15px rgba(0,0,0,.8);
+}
+
+.gauge:before{
+    content:"";
+
+    position:absolute;
+
+    inset:7px;
+
+    border-radius:50%;
+
+    border:2px solid #333;
+
+    opacity:.7;
 }
 
 .gaugeTitle{
     position:absolute;
 
-    top:27px;
+    top:38px;
 
     width:100%;
 
     text-align:center;
 
-    color:#888;
+    font-size:9px;
 
-    font-size:7px;
+    color:#888;
 
     letter-spacing:1px;
 }
@@ -459,13 +533,13 @@ html,body{
 .gaugeNumber{
     position:absolute;
 
-    top:41px;
+    top:54px;
 
     width:100%;
 
     text-align:center;
 
-    font-size:23px;
+    font-size:28px;
 
     font-weight:bold;
 }
@@ -473,15 +547,497 @@ html,body{
 .gaugeUnit{
     position:absolute;
 
-    top:71px;
+    top:91px;
 
     width:100%;
 
     text-align:center;
 
-    color:#888;
+    color:#777;
 
-    font-size:6px;
+    font-size:8px;
+}
+
+
+/* =====================================================
+   3D CAR
+===================================================== */
+
+#carScene{
+    position:absolute;
+
+    left:52%;
+    top:67%;
+
+    width:290px;
+    height:290px;
+
+    transform:
+    translate(-50%,-50%);
+
+    perspective:900px;
+
+    z-index:20;
+
+    pointer-events:none;
+}
+
+
+/* ground */
+
+#carGround{
+    position:absolute;
+
+    left:50%;
+    top:52%;
+
+    width:280px;
+    height:170px;
+
+    transform:
+    translate(-50%,-50%)
+    rotateX(62deg);
+
+    border-radius:50%;
+
+    background:
+    radial-gradient(
+        ellipse,
+        rgba(50,110,65,.32),
+        rgba(0,0,0,.8) 55%,
+        transparent 72%
+    );
+
+    filter:blur(2px);
+}
+
+
+/* shadow */
+
+#carShadow{
+    position:absolute;
+
+    left:50%;
+    top:52%;
+
+    width:180px;
+    height:245px;
+
+    transform:
+    translate(-50%,-50%)
+    rotateX(55deg);
+
+    border-radius:50%;
+
+    background:#000;
+
+    filter:blur(15px);
+
+    opacity:.8;
+}
+
+
+/* body */
+
+#carBody{
+    position:absolute;
+
+    left:50%;
+    top:50%;
+
+    width:145px;
+    height:235px;
+
+    transform:
+    translate(-50%,-50%)
+    rotateX(3deg);
+
+    border-radius:
+    48px 48px 38px 38px;
+
+    background:
+    linear-gradient(
+        90deg,
+        #101010 0%,
+        #555 12%,
+        #242424 25%,
+        #080808 48%,
+        #5c5c5c 72%,
+        #111 100%
+    );
+
+    border:2px solid #777;
+
+    box-shadow:
+    inset 15px 0 18px
+    rgba(255,255,255,.08),
+
+    inset -15px 0 18px
+    rgba(0,0,0,.7),
+
+    0 20px 35px #000;
+}
+
+
+/* roof */
+
+#carRoof{
+    position:absolute;
+
+    left:50%;
+    top:47px;
+
+    width:104px;
+    height:112px;
+
+    transform:translateX(-50%);
+
+    border-radius:
+    38px 38px 24px 24px;
+
+    background:
+    linear-gradient(
+        90deg,
+        #151515,
+        #4d4d4d,
+        #111,
+        #555,
+        #111
+    );
+
+    border:2px solid #444;
+
+    box-shadow:
+    inset 0 5px 8px
+    rgba(255,255,255,.08);
+}
+
+
+/* windshield */
+
+#windshield{
+    position:absolute;
+
+    left:50%;
+    top:58px;
+
+    width:82px;
+    height:54px;
+
+    transform:translateX(-50%);
+
+    border-radius:
+    28px 28px 8px 8px;
+
+    background:
+    linear-gradient(
+        145deg,
+        #6b818a,
+        #1d3038 35%,
+        #050a0d 100%
+    );
+
+    border:2px solid #526168;
+
+    box-shadow:
+    inset 0 6px 9px
+    rgba(255,255,255,.12);
+}
+
+
+/* rear window */
+
+#rearWindow{
+    position:absolute;
+
+    left:50%;
+    bottom:50px;
+
+    width:76px;
+    height:45px;
+
+    transform:translateX(-50%);
+
+    border-radius:
+    9px 9px 25px 25px;
+
+    background:
+    linear-gradient(
+        145deg,
+        #3a4b51,
+        #0b1114
+    );
+
+    border:2px solid #3b4447;
+}
+
+
+/* headlights */
+
+.headlight{
+    position:absolute;
+
+    top:17px;
+
+    width:29px;
+    height:10px;
+
+    border-radius:8px;
+
+    background:#eaffff;
+
+    box-shadow:
+    0 0 12px #d5f8ff,
+    0 0 25px rgba(150,220,255,.7);
+}
+
+#headlightLeft{
+    left:25px;
+}
+
+#headlightRight{
+    right:25px;
+}
+
+
+/* rear lights */
+
+.rearlight{
+    position:absolute;
+
+    bottom:17px;
+
+    width:31px;
+    height:11px;
+
+    border-radius:8px;
+
+    background:#550808;
+
+    box-shadow:
+    inset 0 0 5px #000;
+
+    transition:
+    background .15s,
+    box-shadow .15s;
+}
+
+#rearLightLeft{
+    left:22px;
+}
+
+#rearLightRight{
+    right:22px;
+}
+
+
+/* =====================================================
+   CAR WHEELS
+===================================================== */
+
+.wheel3d{
+    position:absolute;
+
+    width:27px;
+    height:66px;
+
+    border-radius:10px;
+
+    background:
+    linear-gradient(
+        90deg,
+        #020202,
+        #303030,
+        #777,
+        #111,
+        #020202
+    );
+
+    border:2px solid #050505;
+
+    box-shadow:
+    0 5px 7px #000;
+
+    transition:
+    transform .12s ease;
+}
+
+#wheelFL{
+    left:-15px;
+    top:43px;
+}
+
+#wheelFR{
+    right:-15px;
+    top:43px;
+}
+
+#wheelRL{
+    left:-15px;
+    bottom:42px;
+}
+
+#wheelRR{
+    right:-15px;
+    bottom:42px;
+}
+
+.wheel3d:after{
+    content:"";
+
+    position:absolute;
+
+    left:50%;
+    top:50%;
+
+    width:9px;
+    height:9px;
+
+    transform:
+    translate(-50%,-50%);
+
+    border-radius:50%;
+
+    background:#777;
+
+    border:2px solid #222;
+}
+
+
+/* =====================================================
+   SENSOR ZONES
+===================================================== */
+
+.sensorZone{
+    position:absolute;
+
+    left:50%;
+
+    width:110px;
+    height:70px;
+
+    transform:translateX(-50%);
+
+    border-radius:50%;
+
+    pointer-events:none;
+
+    transition:
+    all .3s ease;
+}
+
+#frontSensor{
+    top:-5px;
+
+    background:
+    radial-gradient(
+        ellipse,
+        rgba(76,175,80,.30),
+        transparent 70%
+    );
+}
+
+#rearSensor{
+    bottom:-5px;
+
+    background:
+    radial-gradient(
+        ellipse,
+        rgba(41,182,246,.25),
+        transparent 70%
+    );
+}
+
+
+/* warning */
+
+#carScene.warning #carBody{
+    filter:
+    drop-shadow(
+        0 0 15px
+        rgba(255,0,0,.75)
+    );
+}
+
+#carScene.warning .sensorZone{
+    background:
+    radial-gradient(
+        ellipse,
+        rgba(244,67,54,.48),
+        transparent 70%
+    );
+}
+
+#carScene.warning #carLabel{
+    color:#f44336;
+}
+
+
+/* direction */
+
+#carDirection{
+    position:absolute;
+
+    left:50%;
+    top:-23px;
+
+    transform:translateX(-50%);
+
+    color:#aaa;
+
+    font-size:18px;
+}
+
+
+/* label */
+
+#carLabel{
+    position:absolute;
+
+    left:50%;
+    bottom:-30px;
+
+    transform:translateX(-50%);
+
+    color:#777;
+
+    font-size:9px;
+
+    letter-spacing:3px;
+
+    white-space:nowrap;
+}
+
+
+/* movement */
+
+#carScene.moving #carBody{
+    animation:
+    carBounce .3s infinite;
+}
+
+@keyframes carBounce{
+
+    0%{
+        transform:
+        translate(-50%,-50%)
+        translateY(0)
+        rotateX(3deg);
+    }
+
+    50%{
+        transform:
+        translate(-50%,-50%)
+        translateY(-4px)
+        rotateX(3deg);
+    }
+
+    100%{
+        transform:
+        translate(-50%,-50%)
+        translateY(0)
+        rotateX(3deg);
+    }
 }
 
 
@@ -492,132 +1048,101 @@ html,body{
 #cameraPanel{
     position:absolute;
 
-    left:54%;
-
+    right:12px;
     top:50%;
 
-    transform:
-    translate(-50%,-50%);
+    transform:translateY(-50%);
 
-    width:215px;
+    width:235px;
 
-    padding:6px;
+    padding:8px;
 
-    background:#000e;
+    background:
+    rgba(5,5,5,.9);
 
-    border:1px solid #444;
+    border:1px solid #333;
 
-    border-radius:10px;
+    border-radius:14px;
 
-    z-index:25;
+    z-index:40;
 
-    text-align:center;
+    box-shadow:
+    0 0 20px rgba(0,0,0,.7);
 }
 
 #driverCamera{
-    width:100%;
+    display:block;
 
-    height:140px;
+    width:100%;
+    height:155px;
 
     object-fit:cover;
 
-    object-position:center;
-
-    border-radius:7px;
+    border-radius:9px;
 
     background:#111;
-
-    display:block;
 
     transform:scaleX(-1);
 }
 
-#cameraState{
-    font-size:7px;
-
-    color:#aaa;
-
-    margin-top:3px;
-}
-
-#eyeState{
-    font-size:7px;
-
-    color:#aaa;
-
-    margin-top:2px;
-}
-
+#cameraState,
+#eyeState,
 #drowsyState{
-    font-size:7px;
+    margin-top:4px;
 
-    color:#aaa;
+    font-size:8px;
 
-    margin-top:2px;
+    color:#999;
 }
 
 #cameraBtn,
 #switchCamera{
     width:48%;
 
-    margin-top:4px;
+    margin-top:6px;
 
-    padding:6px;
-
-    font-size:7px;
+    padding:7px;
 
     border:0;
 
-    border-radius:6px;
+    border-radius:7px;
 
-    background:#2196F3;
+    background:#1684e8;
 
-    color:white;
+    color:#fff;
+
+    font-size:8px;
 }
 
 #switchCamera{
-    background:#444;
+    background:#333;
 }
 
 
 /* =====================================================
-   FWD / BACK
-   FAR RIGHT
+   PEDALS
 ===================================================== */
 
 #pedalStack{
     position:absolute;
 
-    right:10px;
+    right:12px;
+    top:68%;
 
-    top:50%;
-
-    transform:
-    translateY(-50%);
+    transform:translateY(-50%);
 
     display:flex;
 
     flex-direction:column;
 
-    gap:10px;
+    gap:15px;
 
-    z-index:35;
+    z-index:50;
 }
 
 .pedal{
-    width:58px;
-
-    height:90px;
-
-    border-radius:10px;
-
-    background:
-    linear-gradient(
-        #c8c8c8,
-        #555
-    );
-
-    color:#111;
+    width:72px;
+    height:105px;
 
     display:flex;
 
@@ -627,132 +1152,191 @@ html,body{
 
     text-align:center;
 
-    font-size:9px;
+    flex-direction:column;
 
-    font-weight:bold;
+    border-radius:13px;
+
+    background:
+    linear-gradient(
+        #bcbcbc,
+        #515151
+    );
+
+    color:#111;
 
     border:3px solid #4CAF50;
 
     box-shadow:
-    0 0 12px rgba(76,175,80,.35);
+    0 0 15px
+    rgba(76,175,80,.35);
 
-    transition:
-    border-color .2s ease,
-    box-shadow .2s ease,
-    background .15s ease;
+    font-size:11px;
+
+    font-weight:bold;
+
+    transition:.15s ease;
 }
-
-
-/* ECO = GREEN */
-
-#app:not(.sport) .pedal{
-    border-color:#4CAF50;
-
-    box-shadow:
-    0 0 14px rgba(76,175,80,.45);
-}
-
-
-/* SPORT = RED */
 
 #app.sport .pedal{
     border-color:#f44336;
 
     box-shadow:
-    0 0 14px rgba(244,67,54,.45);
+    0 0 15px
+    rgba(244,67,54,.35);
 }
 
-
-/* PRESSED ECO */
+.pedal.active{
+    transform:scale(.96);
+}
 
 #app:not(.sport) .pedal.active{
     background:#4CAF50;
-
     color:#fff;
-
-    box-shadow:
-    0 0 20px #4CAF50;
 }
-
-
-/* PRESSED SPORT */
 
 #app.sport .pedal.active{
     background:#f44336;
-
     color:#fff;
-
-    box-shadow:
-    0 0 20px #f44336;
 }
 
 
 /* =====================================================
-   STEERING
+   ROUND BMW-STYLE STEERING
 ===================================================== */
 
 #wheelWrap{
     position:absolute;
 
-    left:12px;
+    left:18px;
+    bottom:15px;
 
-    bottom:12px;
+    width:220px;
+    height:220px;
 
-    width:115px;
-    height:115px;
+    z-index:60;
 
-    z-index:30;
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
 }
 
+
+/* wheel */
+
 #wheel{
-    width:100%;
-    height:100%;
+    position:relative;
+
+    width:200px;
+    height:200px;
 
     border-radius:50%;
 
-    border:7px solid #555;
+    background:
+    radial-gradient(
+        circle,
+        transparent 0%,
+        transparent 55%,
+        #080808 56%,
+        #111 64%,
+        #030303 70%,
+        #181818 72%,
+        #050505 100%
+    );
 
-    background:#151515;
+    border:15px solid #171717;
 
-    position:relative;
+    box-shadow:
+    inset 0 0 0 3px #444,
+    inset 0 0 12px #000,
+    0 10px 25px rgba(0,0,0,.9);
+
+    transform:rotate(0deg);
 
     transition:
-    transform .15s ease;
+    box-shadow .15s ease;
+
+    touch-action:none;
 }
+
+
+/* outer rim */
 
 #wheel:before{
     content:"";
 
     position:absolute;
 
-    left:50%;
-    top:15%;
+    inset:-9px;
 
-    width:9px;
-    height:70%;
+    border-radius:50%;
 
-    transform:
-    translateX(-50%);
+    border:2px solid #555;
 
-    background:#333;
+    opacity:.8;
 }
 
-#wheel:after{
-    content:"";
 
+/* =====================================================
+   STEERING SPOKES
+===================================================== */
+
+.steeringSpoke{
     position:absolute;
 
+    left:50%;
     top:50%;
-    left:15%;
 
-    width:70%;
-    height:9px;
+    background:
+    linear-gradient(
+        90deg,
+        #111,
+        #555,
+        #222
+    );
+
+    border-radius:8px;
+
+    z-index:3;
+}
+
+#spokeLeft{
+    width:75px;
+    height:15px;
 
     transform:
-    translateY(-50%);
+    translate(-100%,-50%)
+    rotate(-20deg);
 
-    background:#333;
+    margin-left:8px;
 }
+
+#spokeRight{
+    width:75px;
+    height:15px;
+
+    transform:
+    translate(0,-50%)
+    rotate(20deg);
+
+    margin-left:-8px;
+}
+
+#spokeBottom{
+    width:17px;
+    height:75px;
+
+    transform:
+    translate(-50%,0);
+
+    margin-top:-2px;
+}
+
+
+/* =====================================================
+   HUB
+===================================================== */
 
 #hub{
     position:absolute;
@@ -760,17 +1344,313 @@ html,body{
     left:50%;
     top:50%;
 
-    width:42px;
-    height:42px;
+    width:76px;
+    height:76px;
 
     transform:
     translate(-50%,-50%);
 
     border-radius:50%;
 
-    background:#222;
+    background:
+    radial-gradient(
+        circle,
+        #343434,
+        #121212 60%,
+        #050505 100%
+    );
 
-    border:3px solid #777;
+    border:4px solid #777;
+
+    box-shadow:
+    inset 0 0 10px #000;
+
+    z-index:8;
+}
+
+
+/* center emblem */
+
+#hub:after{
+    content:"";
+
+    position:absolute;
+
+    left:50%;
+    top:50%;
+
+    width:30px;
+    height:30px;
+
+    transform:
+    translate(-50%,-50%);
+
+    border-radius:50%;
+
+    border:2px solid #aaa;
+
+    box-shadow:
+    inset 0 0 5px #000;
+}
+
+
+/* M mark */
+
+#hub:before{
+    content:"M";
+
+    position:absolute;
+
+    left:50%;
+    top:50%;
+
+    transform:
+    translate(-50%,-50%);
+
+    color:#ddd;
+
+    font-size:15px;
+
+    font-weight:bold;
+
+    z-index:2;
+}
+
+
+/* steering marker */
+
+#steeringMarker{
+    position:absolute;
+
+    left:50%;
+    top:-4px;
+
+    transform:
+    translateX(-50%);
+
+    width:6px;
+    height:19px;
+
+    border-radius:3px;
+
+    background:#e53935;
+
+    box-shadow:
+    0 0 8px rgba(229,57,53,.6);
+
+    z-index:10;
+}
+
+
+/* steering angle */
+
+#steeringValue{
+    position:absolute;
+
+    left:50%;
+    bottom:-20px;
+
+    transform:
+    translateX(-50%);
+
+    font-size:9px;
+
+    color:#aaa;
+
+    letter-spacing:2px;
+
+    white-space:nowrap;
+}
+
+
+/* steering scale */
+
+#steeringScale{
+    position:absolute;
+
+    left:50%;
+    bottom:-4px;
+
+    transform:
+    translateX(-50%);
+
+    width:190px;
+    height:25px;
+
+    border-top:
+    1px solid #555;
+
+    z-index:2;
+}
+
+#steeringScale:before{
+    content:
+    "−90°          0°          +90°";
+
+    position:absolute;
+
+    left:0;
+    top:5px;
+
+    width:100%;
+
+    text-align:center;
+
+    font-size:7px;
+
+    color:#777;
+
+    white-space:pre;
+}
+
+
+/* =====================================================
+   DROWSINESS FULL SCREEN WARNING
+===================================================== */
+
+#drowsyWarning{
+
+    position:absolute;
+
+    inset:0;
+
+    z-index:95;
+
+    display:none;
+
+    align-items:center;
+
+    justify-content:center;
+
+    flex-direction:column;
+
+    pointer-events:none;
+
+    background:
+    radial-gradient(
+        ellipse at center,
+        transparent 25%,
+        rgba(255,0,0,.035) 50%,
+        rgba(255,0,0,.22) 100%
+    );
+
+    border:
+    6px solid rgba(255,0,0,.25);
+
+    animation:
+    drowsyPulse 1.8s ease-in-out infinite;
+}
+
+#drowsyWarning.active{
+    display:flex;
+}
+
+
+/* slow red page pulse */
+
+@keyframes drowsyPulse{
+
+    0%{
+
+        border-color:
+        rgba(255,0,0,.18);
+
+        box-shadow:
+        inset 0 0 25px
+        rgba(255,0,0,.08);
+    }
+
+    50%{
+
+        border-color:
+        rgba(255,0,0,.78);
+
+        box-shadow:
+        inset 0 0 90px
+        rgba(255,0,0,.32);
+    }
+
+    100%{
+
+        border-color:
+        rgba(255,0,0,.18);
+
+        box-shadow:
+        inset 0 0 25px
+        rgba(255,0,0,.08);
+    }
+}
+
+
+/* warning icon */
+
+#drowsyWarningIcon{
+
+    font-size:60px;
+
+    margin-bottom:8px;
+
+    filter:
+    drop-shadow(
+        0 0 14px
+        rgba(255,0,0,.9)
+    );
+
+    animation:
+        warningIconPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes warningIconPulse{
+
+    0%,
+    100%{
+
+        transform:
+        scale(.92);
+
+        opacity:.65;
+    }
+
+    50%{
+
+        transform:
+        scale(1.08);
+
+        opacity:1;
+    }
+
+}
+
+
+/* warning title */
+
+#drowsyWarningText{
+
+    font-size:18px;
+
+    font-weight:bold;
+
+    letter-spacing:2px;
+
+    color:#ff3333;
+
+    text-shadow:
+    0 0 12px
+    rgba(255,0,0,.9);
+}
+
+
+/* warning subtitle */
+
+#drowsyWarningSub{
+
+    margin-top:7px;
+
+    font-size:9px;
+
+    letter-spacing:1px;
+
+    color:#ffaaaa;
 }
 
 
@@ -779,39 +1659,58 @@ html,body{
 ===================================================== */
 
 #collisionOverlay{
+
     display:none;
 
     position:absolute;
 
     inset:0;
 
-    z-index:100;
-
     background:
-    rgba(255,0,0,.12);
+    rgba(255,0,0,.13);
+
+    z-index:100;
 
     pointer-events:none;
 }
 
 #collisionOverlay.active{
+
     display:block;
+
+    animation:
+    collisionFlash .5s infinite;
+}
+
+@keyframes collisionFlash{
+
+    50%{
+
+        background:
+        rgba(255,0,0,.03);
+    }
+
 }
 
 #collisionIcon{
+
+    display:none;
+
     position:absolute;
 
     left:50%;
-    top:55%;
+    top:63%;
 
     transform:
     translate(-50%,-50%);
 
-    font-size:50px;
+    font-size:55px;
 
-    display:none;
+    z-index:110;
 }
 
 #collisionIcon.active{
+
     display:block;
 }
 
@@ -822,113 +1721,350 @@ html,body{
 
 @media(max-width:700px){
 
+    #infoBar{
+
+        gap:10px;
+
+        padding:
+        6px 10px;
+
+        font-size:7px;
+    }
+
+
+    #statusBox{
+
+        width:125px;
+    }
+
+
+    #status{
+
+        font-size:8px;
+    }
+
+
+    #connectBtn{
+
+        font-size:8px;
+    }
+
+
+    #distCircle{
+
+        width:82px;
+        height:82px;
+    }
+
+
+    .distVal{
+
+        font-size:13px;
+    }
+
+
+    .distLabel{
+
+        font-size:5px;
+    }
+
+
     #gaugeRow{
 
-        top:38%;
+        left:36%;
 
-        left:18%;
+        top:39%;
 
         transform:
         translate(-50%,-50%)
-        scale(.78);
+        scale(.67);
 
-        gap:5px;
+        gap:3px;
+    }
+
+
+    #carScene{
+
+        left:43%;
+
+        top:69%;
+
+        transform:
+        translate(-50%,-50%)
+        scale(.62);
     }
 
 
     #cameraPanel{
 
-        left:53%;
+        right:7px;
 
-        width:185px;
+        width:180px;
     }
 
 
     #driverCamera{
 
-        height:125px;
+        height:120px;
     }
 
 
     #pedalStack{
 
-        right:7px;
+        right:6px;
+
+        gap:8px;
     }
 
 
     .pedal{
 
-        width:48px;
+        width:52px;
 
         height:76px;
+
+        font-size:8px;
     }
 
 
     #wheelWrap{
 
-        width:105px;
+        left:3px;
 
-        height:105px;
+        bottom:5px;
 
-        left:8px;
+        width:135px;
 
-        bottom:8px;
+        height:135px;
+    }
+
+
+    #wheel{
+
+        width:125px;
+
+        height:125px;
+
+        border-width:11px;
+    }
+
+
+    #hub{
+
+        width:48px;
+
+        height:48px;
+    }
+
+
+    #steeringScale{
+
+        width:125px;
+    }
+
+
+    #steeringValue{
+
+        font-size:6px;
     }
 
 }
 
 
 /* =====================================================
-   VERY SMALL PHONE
+   SMALL PHONE
 ===================================================== */
 
 @media(max-width:500px){
 
+    #infoBar{
+
+        top:5px;
+
+        transform:
+        translateX(-50%)
+        scale(.85);
+    }
+
+
+    #statusBox{
+
+        top:5px;
+
+        right:5px;
+
+        width:110px;
+
+        padding:6px;
+    }
+
+
+    #distCircle{
+
+        top:5px;
+
+        left:5px;
+
+        width:70px;
+
+        height:70px;
+    }
+
+
+    #coords{
+
+        top:29px;
+
+        font-size:6px;
+    }
+
+
+    #gpsReqBtn,
+    #smsBtn{
+
+        top:51px;
+
+        padding:4px 6px;
+
+        font-size:6px;
+    }
+
+
+    #gpsReqBtn{
+
+        left:82px;
+    }
+
+
+    #modeToggle{
+
+        top:55px;
+
+        transform:
+        translateX(-50%)
+        scale(.8);
+    }
+
+
     #gaugeRow{
+
+        left:34%;
 
         top:36%;
 
-        left:17%;
+        transform:
+        translate(-50%,-50%)
+        scale(.53);
+    }
+
+
+    #carScene{
+
+        left:43%;
+
+        top:68%;
 
         transform:
         translate(-50%,-50%)
-        scale(.68);
+        scale(.48);
     }
 
 
     #cameraPanel{
 
-        left:52%;
+        right:4px;
 
-        width:165px;
+        width:150px;
+
+        padding:5px;
     }
 
 
     #driverCamera{
 
-        height:110px;
+        height:100px;
     }
 
 
     #pedalStack{
 
-        right:5px;
+        right:4px;
     }
 
 
     .pedal{
 
-        width:44px;
+        width:43px;
 
-        height:68px;
+        height:65px;
+
+        font-size:7px;
     }
 
 
     #wheelWrap{
 
-        width:95px;
+        left:1px;
 
-        height:95px;
+        bottom:3px;
+
+        width:115px;
+
+        height:115px;
+    }
+
+
+    #wheel{
+
+        width:105px;
+
+        height:105px;
+
+        border-width:9px;
+    }
+
+
+    #hub{
+
+        width:40px;
+
+        height:40px;
+    }
+
+
+    #steeringScale{
+
+        width:105px;
+    }
+
+
+    #steeringValue{
+
+        bottom:-17px;
+
+        font-size:5px;
+    }
+
+
+    /* DROWSINESS WARNING */
+
+    #drowsyWarningIcon{
+
+        font-size:45px;
+    }
+
+
+    #drowsyWarningText{
+
+        font-size:13px;
+
+        letter-spacing:1px;
+    }
+
+
+    #drowsyWarningSub{
+
+        font-size:7px;
     }
 
 }
@@ -977,24 +2113,7 @@ html,body{
 
 
 <!-- =====================================================
-     BLE
-===================================================== -->
-
-<div id="statusBox">
-
-    <div id="status">
-        Not connected
-    </div>
-
-    <button id="connectBtn">
-        Connect to Car
-    </button>
-
-</div>
-
-
-<!-- =====================================================
-     GPS / GSM / SMS
+     TOP STATUS
 ===================================================== -->
 
 <div id="infoBar">
@@ -1037,6 +2156,27 @@ html,body{
 </div>
 
 
+<!-- =====================================================
+     CONNECTION
+===================================================== -->
+
+<div id="statusBox">
+
+    <div id="status">
+        Not connected
+    </div>
+
+    <button id="connectBtn">
+        CONNECT TO CAR
+    </button>
+
+</div>
+
+
+<!-- =====================================================
+     GPS
+===================================================== -->
+
 <div id="coords">
     no GPS fix
 </div>
@@ -1051,6 +2191,10 @@ html,body{
     SMS
 </button>
 
+
+<!-- =====================================================
+     SMS
+===================================================== -->
 
 <div id="msgPanel">
 
@@ -1153,10 +2297,116 @@ html,body{
 
 
 <!-- =====================================================
+     3D CAR
+===================================================== -->
+
+<div id="carScene">
+
+
+    <div id="carGround">
+    </div>
+
+
+    <div
+    class="sensorZone"
+    id="frontSensor">
+    </div>
+
+
+    <div
+    class="sensorZone"
+    id="rearSensor">
+    </div>
+
+
+    <div id="carShadow">
+    </div>
+
+
+    <div id="carBody">
+
+
+        <div
+        class="headlight"
+        id="headlightLeft">
+        </div>
+
+
+        <div
+        class="headlight"
+        id="headlightRight">
+        </div>
+
+
+        <div id="carRoof">
+        </div>
+
+
+        <div id="windshield">
+        </div>
+
+
+        <div id="rearWindow">
+        </div>
+
+
+        <div
+        class="rearlight"
+        id="rearLightLeft">
+        </div>
+
+
+        <div
+        class="rearlight"
+        id="rearLightRight">
+        </div>
+
+
+        <div
+        class="wheel3d"
+        id="wheelFL">
+        </div>
+
+
+        <div
+        class="wheel3d"
+        id="wheelFR">
+        </div>
+
+
+        <div
+        class="wheel3d"
+        id="wheelRL">
+        </div>
+
+
+        <div
+        class="wheel3d"
+        id="wheelRR">
+        </div>
+
+
+    </div>
+
+
+    <div id="carDirection">
+        ▲
+    </div>
+
+
+    <div id="carLabel">
+        RC CAR
+    </div>
+
+</div>
+
+
+<!-- =====================================================
      CAMERA
 ===================================================== -->
 
 <div id="cameraPanel">
+
 
     <video
     id="driverCamera"
@@ -1194,7 +2444,7 @@ html,body{
 
 
 <!-- =====================================================
-     FWD / BACK
+     PEDALS
 ===================================================== -->
 
 <div id="pedalStack">
@@ -1204,8 +2454,10 @@ html,body{
     class="pedal"
     id="fwdBtn">
 
-        ▲
-        <br>
+        <span style="font-size:20px;">
+            ▲
+        </span>
+
         FWD
 
     </div>
@@ -1215,8 +2467,10 @@ html,body{
     class="pedal"
     id="backBtn">
 
-        ▼
-        <br>
+        <span style="font-size:20px;">
+            ▼
+        </span>
+
         BACK
 
     </div>
@@ -1225,16 +2479,77 @@ html,body{
 
 
 <!-- =====================================================
-     STEERING
+     ROUND STEERING
 ===================================================== -->
 
 <div id="wheelWrap">
 
+
     <div id="wheel">
 
-        <div id="hub"></div>
+
+        <div
+        id="steeringMarker">
+        </div>
+
+
+        <div
+        class="steeringSpoke"
+        id="spokeLeft">
+        </div>
+
+
+        <div
+        class="steeringSpoke"
+        id="spokeRight">
+        </div>
+
+
+        <div
+        class="steeringSpoke"
+        id="spokeBottom">
+        </div>
+
+
+        <div id="hub">
+        </div>
+
 
     </div>
+
+
+    <div id="steeringScale">
+    </div>
+
+
+    <div id="steeringValue">
+        STEERING 0°
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     DROWSINESS WARNING
+===================================================== -->
+
+<div id="drowsyWarning">
+
+
+    <div id="drowsyWarningIcon">
+        ⚠️
+    </div>
+
+
+    <div id="drowsyWarningText">
+        DROWSINESS WARNING
+    </div>
+
+
+    <div id="drowsyWarningSub">
+        PLEASE OPEN YOUR EYES
+    </div>
+
 
 </div>
 
@@ -1254,8 +2569,742 @@ html,body{
 
 </div>
 
-   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+
+<!-- =====================================================
+     MEDIAPIPE
+===================================================== -->
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+
+
+<!-- =====================================================
+     YOUR EXISTING SCRIPT
+===================================================== -->
+
 <script src="script.js"></script>
+
+
+<!-- =====================================================
+     VISUAL CONTROL LOGIC
+===================================================== -->
+
+<script>
+
+/* =====================================================
+   ELEMENTS
+===================================================== */
+
+const carScene =
+document.getElementById(
+    "carScene"
+);
+
+const frontSensor =
+document.getElementById(
+    "frontSensor"
+);
+
+const rearSensor =
+document.getElementById(
+    "rearSensor"
+);
+
+const distFront =
+document.getElementById(
+    "distFront"
+);
+
+const distRear =
+document.getElementById(
+    "distRear"
+);
+
+const fwdBtn =
+document.getElementById(
+    "fwdBtn"
+);
+
+const backBtn =
+document.getElementById(
+    "backBtn"
+);
+
+const wheel =
+document.getElementById(
+    "wheel"
+);
+
+const steeringValue =
+document.getElementById(
+    "steeringValue"
+);
+
+const wheelFL =
+document.getElementById(
+    "wheelFL"
+);
+
+const wheelFR =
+document.getElementById(
+    "wheelFR"
+);
+
+const rearLightLeft =
+document.getElementById(
+    "rearLightLeft"
+);
+
+const rearLightRight =
+document.getElementById(
+    "rearLightRight"
+);
+
+
+/* =====================================================
+   DISTANCE
+===================================================== */
+
+function updateCarSensors(){
+
+    const front =
+    parseFloat(
+        distFront.innerText
+    );
+
+    const rear =
+    parseFloat(
+        distRear.innerText
+    );
+
+
+    if(!isNaN(front)){
+
+        const size =
+        Math.max(
+            45,
+            Math.min(
+                170,
+                front * 1.4
+            )
+        );
+
+
+        frontSensor.style.width =
+        size + "px";
+
+
+        frontSensor.style.height =
+        size * .55 + "px";
+
+
+        if(front <= 30){
+
+            carScene.classList.add(
+                "warning"
+            );
+
+        }else{
+
+            carScene.classList.remove(
+                "warning"
+            );
+
+        }
+
+    }
+
+
+    if(!isNaN(rear)){
+
+        const size =
+        Math.max(
+            45,
+            Math.min(
+                170,
+                rear * 1.4
+            )
+        );
+
+
+        rearSensor.style.width =
+        size + "px";
+
+
+        rearSensor.style.height =
+        size * .55 + "px";
+
+    }
+
+}
+
+
+/* distance observer */
+
+const distanceObserver =
+new MutationObserver(
+    updateCarSensors
+);
+
+
+distanceObserver.observe(
+    distFront,
+    {
+        childList:true,
+        characterData:true,
+        subtree:true
+    }
+);
+
+
+distanceObserver.observe(
+    distRear,
+    {
+        childList:true,
+        characterData:true,
+        subtree:true
+    }
+);
+
+
+updateCarSensors();
+
+
+/* =====================================================
+   FORWARD
+===================================================== */
+
+function startForward(){
+
+    carScene.classList.add(
+        "moving"
+    );
+
+
+    document.getElementById(
+        "carDirection"
+    ).innerText = "▲";
+
+
+    rearLightLeft.style.background =
+    "#550808";
+
+
+    rearLightRight.style.background =
+    "#550808";
+
+}
+
+
+fwdBtn.addEventListener(
+    "pointerdown",
+    startForward
+);
+
+fwdBtn.addEventListener(
+    "pointerup",
+    stopCarVisual
+);
+
+fwdBtn.addEventListener(
+    "pointercancel",
+    stopCarVisual
+);
+
+
+/* =====================================================
+   BACKWARD
+===================================================== */
+
+function startBackward(){
+
+    carScene.classList.add(
+        "moving"
+    );
+
+
+    document.getElementById(
+        "carDirection"
+    ).innerText = "▼";
+
+
+    rearLightLeft.style.background =
+    "#ff1111";
+
+
+    rearLightRight.style.background =
+    "#ff1111";
+
+
+    rearLightLeft.style.boxShadow =
+    "0 0 12px #ff0000";
+
+
+    rearLightRight.style.boxShadow =
+    "0 0 12px #ff0000";
+
+}
+
+
+backBtn.addEventListener(
+    "pointerdown",
+    startBackward
+);
+
+backBtn.addEventListener(
+    "pointerup",
+    stopCarVisual
+);
+
+backBtn.addEventListener(
+    "pointercancel",
+    stopCarVisual
+);
+
+
+/* =====================================================
+   STOP
+===================================================== */
+
+function stopCarVisual(){
+
+    carScene.classList.remove(
+        "moving"
+    );
+
+
+    rearLightLeft.style.background =
+    "#550808";
+
+
+    rearLightRight.style.background =
+    "#550808";
+
+
+    rearLightLeft.style.boxShadow =
+    "inset 0 0 5px #000";
+
+
+    rearLightRight.style.boxShadow =
+    "inset 0 0 5px #000";
+
+}
+
+
+/* =====================================================
+   ROUND STEERING
+===================================================== */
+
+let steeringAngle =
+0;
+
+let steeringActive =
+false;
+
+let startX =
+0;
+
+let startSteering =
+0;
+
+
+/* touch start */
+
+wheel.addEventListener(
+    "pointerdown",
+    function(e){
+
+        e.preventDefault();
+
+        steeringActive =
+        true;
+
+
+        startX =
+        e.clientX;
+
+
+        startSteering =
+        steeringAngle;
+
+
+        wheel.setPointerCapture(
+            e.pointerId
+        );
+
+    }
+);
+
+
+/* touch movement */
+
+wheel.addEventListener(
+    "pointermove",
+    function(e){
+
+        if(!steeringActive)
+            return;
+
+
+        e.preventDefault();
+
+
+        const dx =
+        e.clientX - startX;
+
+
+        steeringAngle =
+        startSteering +
+        dx * .55;
+
+
+        steeringAngle =
+        Math.max(
+            -90,
+            Math.min(
+                90,
+                steeringAngle
+            )
+        );
+
+
+        updateSteering();
+
+    }
+);
+
+
+/* release */
+
+function releaseSteering(e){
+
+    if(!steeringActive)
+        return;
+
+
+    steeringActive =
+    false;
+
+
+    try{
+
+        wheel.releasePointerCapture(
+            e.pointerId
+        );
+
+    }catch(err){}
+
+
+    returnSteeringToCenter();
+
+}
+
+
+wheel.addEventListener(
+    "pointerup",
+    releaseSteering
+);
+
+
+wheel.addEventListener(
+    "pointercancel",
+    releaseSteering
+);
+
+
+/* =====================================================
+   UPDATE STEERING
+===================================================== */
+
+function updateSteering(){
+
+    wheel.style.transform =
+    "rotate(" +
+    steeringAngle +
+    "deg)";
+
+
+    steeringValue.innerText =
+    "STEERING " +
+    Math.round(
+        steeringAngle
+    ) +
+    "°";
+
+
+    const carAngle =
+    steeringAngle * .45;
+
+
+    wheelFL.style.transform =
+    "rotate(" +
+    carAngle +
+    "deg)";
+
+
+    wheelFR.style.transform =
+    "rotate(" +
+    carAngle +
+    "deg)";
+
+}
+
+
+/* =====================================================
+   RETURN STEERING TO CENTER
+===================================================== */
+
+function returnSteeringToCenter(){
+
+    const timer =
+    setInterval(
+        function(){
+
+            steeringAngle *=
+            .82;
+
+
+            if(
+                Math.abs(
+                    steeringAngle
+                ) < .5
+            ){
+
+                steeringAngle =
+                0;
+
+
+                clearInterval(
+                    timer
+                );
+
+            }
+
+
+            updateSteering();
+
+        },
+        16
+    );
+
+}
+
+
+/* =====================================================
+   COLLISION
+===================================================== */
+
+const collisionOverlay =
+document.getElementById(
+    "collisionOverlay"
+);
+
+
+const collisionObserver =
+new MutationObserver(
+    function(){
+
+        if(
+            collisionOverlay
+            .classList
+            .contains("active")
+        ){
+
+            carScene.classList.add(
+                "warning"
+            );
+
+        }else{
+
+            carScene.classList.remove(
+                "warning"
+            );
+
+        }
+
+    }
+);
+
+
+collisionObserver.observe(
+    collisionOverlay,
+    {
+        attributes:true,
+        attributeFilter:[
+            "class"
+        ]
+    }
+);
+
+
+/* =====================================================
+   DROWSINESS WARNING
+===================================================== */
+
+const drowsyWarning =
+document.getElementById(
+    "drowsyWarning"
+);
+
+const eyeState =
+document.getElementById(
+    "eyeState"
+);
+
+const drowsyState =
+document.getElementById(
+    "drowsyState"
+);
+
+
+/*
+    Read the status generated
+    by the existing face detection.
+*/
+
+function checkDrowsiness(){
+
+    if(
+        !eyeState ||
+        !drowsyState ||
+        !drowsyWarning
+    ){
+
+        return;
+
+    }
+
+
+    const eyeText =
+    eyeState.innerText
+    .toUpperCase();
+
+
+    const drowsyText =
+    drowsyState.innerText
+    .toUpperCase();
+
+
+    const eyesClosed =
+    eyeText.includes(
+        ""CLOSED"
+    ) ||
+    eyeText.includes(
+        "CLOSE"
+    );
+
+
+    const drowsy =
+    drowsyText.includes(
+        "DROWSY"
+    ) ||
+    drowsyText.includes(
+        "WARNING"
+    ) ||
+    drowsyText.includes(
+        "ALERT"
+    );
+
+
+    if(
+        eyesClosed ||
+        drowsy
+    ){
+
+        drowsyWarning.classList.add(
+            "active"
+        );
+
+    }else{
+
+        drowsyWarning.classList.remove(
+            "active"
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   WATCH EYE STATUS
+===================================================== */
+
+const drowsyObserver =
+new MutationObserver(
+    checkDrowsiness
+);
+
+
+if(eyeState){
+
+    drowsyObserver.observe(
+        eyeState,
+        {
+            childList:true,
+            characterData:true,
+            subtree:true
+        }
+    );
+
+}
+
+
+if(drowsyState){
+
+    drowsyObserver.observe(
+        drowsyState,
+        {
+            childList:true,
+            characterData:true,
+            subtree:true
+        }
+    );
+
+}
+
+
+/* =====================================================
+   INITIAL STATE
+===================================================== */
+
+updateSteering();
+
+updateCarSensors();
+
+checkDrowsiness();
+
+
+/* =====================================================
+   SAFETY: STOP VISUAL MOVEMENT
+   WHEN PAGE LOSES FOCUS
+===================================================== */
+
+window.addEventListener(
+    "blur",
+    function(){
+
+        stopCarVisual();
+
+    }
+);
+
+
+document.addEventListener(
+    "visibilitychange",
+    function(){
+
+        if(
+            document.hidden
+        ){
+
+            stopCarVisual();
+
+        }
+
+    }
+);
+
+</script>
 
 </body>
 
