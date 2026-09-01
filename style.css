@@ -457,3 +457,109 @@ button {
     }
 
 }
+
+/* ===============================
+   DROWSINESS WARNING
+================================ */
+
+#drowsyWarning {
+    position: fixed;
+    inset: 0;
+    z-index: 95;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    pointer-events: none;
+
+    opacity: 0;
+    visibility: hidden;
+
+    background:
+        radial-gradient(
+            circle,
+            transparent 35%,
+            rgba(255, 0, 0, 0.08) 65%,
+            rgba(255, 0, 0, 0.28) 100%
+        );
+
+    transition: opacity 0.3s ease,
+                visibility 0.3s ease;
+}
+
+#drowsyWarning.active {
+    opacity: 1;
+    visibility: visible;
+
+    animation: drowsyPulse 1.8s ease-in-out infinite;
+}
+
+#drowsyWarningIcon {
+    font-size: 70px;
+
+    animation:
+        warningIconPulse 1.8s ease-in-out infinite;
+}
+
+#drowsyWarningText {
+    margin-top: 12px;
+
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: 3px;
+
+    color: red;
+
+    text-shadow:
+        0 0 10px red,
+        0 0 25px red;
+}
+
+#drowsyWarningSub {
+    margin-top: 8px;
+
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 2px;
+
+    color: white;
+}
+
+@keyframes drowsyPulse {
+
+    0% {
+        box-shadow:
+            inset 0 0 0 rgba(255,0,0,0);
+    }
+
+    50% {
+        box-shadow:
+            inset 0 0 80px rgba(255,0,0,0.35);
+    }
+
+    100% {
+        box-shadow:
+            inset 0 0 0 rgba(255,0,0,0);
+    }
+}
+
+@keyframes warningIconPulse {
+
+    0% {
+        transform: scale(1);
+        opacity: 0.7;
+    }
+
+    50% {
+        transform: scale(1.15);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 0.7;
+    }
+}
+
