@@ -1,41 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
 <meta charset="UTF-8">
+
 <meta name="viewport"
-      content="width=device-width,
-      initial-scale=1.0,
-      maximum-scale=1.0,
-      user-scalable=no">
+content="width=device-width,
+initial-scale=1.0,
+maximum-scale=1.0,
+user-scalable=no">
 
 <title>RC Car Controller</title>
+
+<link rel="preconnect"
+href="https://fonts.googleapis.com">
+
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap"
+rel="stylesheet">
 
 <style>
 
 *{
-    box-sizing:border-box;
-    user-select:none;
-    -webkit-user-select:none;
-    touch-action:none;
+box-sizing:border-box;
+user-select:none;
+-webkit-user-select:none;
+touch-action:none;
 }
 
 html,body{
-    margin:0;
-    width:100%;
-    height:100%;
-    background:#000;
-    color:#fff;
-    font-family:Arial,sans-serif;
-    overflow:hidden;
+margin:0;
+width:100%;
+height:100%;
+background:#000;
+color:#fff;
+font-family:Arial,sans-serif;
+overflow:hidden;
 }
 
 #app{
-    position:relative;
-    width:100%;
-    height:100%;
-    background:
-    radial-gradient(circle at 30% 60%,#0a1f14 0%,#000 55%),
-    radial-gradient(circle at 70% 60%,#0a1522 0%,#000 55%);
+position:relative;
+width:100%;
+height:100%;
+background:
+radial-gradient(circle at 30% 60%,#0a1f14 0%,#000 55%),
+radial-gradient(circle at 70% 60%,#0a1522 0%,#000 55%);
 }
 
 
@@ -44,27 +53,92 @@ html,body{
 ================================ */
 
 #statusBox{
-    position:absolute;
-    top:8px;
-    right:10px;
-    z-index:30;
-    text-align:right;
+position:absolute;
+top:8px;
+right:10px;
+z-index:30;
+text-align:right;
 }
 
 #status{
-    font-size:9px;
-    color:#aaa;
-    margin-bottom:4px;
-    max-width:180px;
+font-size:9px;
+color:#aaa;
+margin-bottom:4px;
+max-width:180px;
 }
 
 #connectBtn{
-    padding:7px 12px;
-    font-size:10px;
-    border:0;
-    border-radius:9px;
-    background:#2196F3;
-    color:#fff;
+padding:7px 12px;
+font-size:10px;
+border:0;
+border-radius:9px;
+background:#2196F3;
+color:white;
+}
+
+
+/* ================================
+   GPS / GSM / SMS BAR
+================================ */
+
+#infoBar{
+position:absolute;
+top:8px;
+left:50%;
+transform:translateX(-50%);
+
+display:flex;
+gap:8px;
+
+z-index:25;
+
+background:#000d;
+
+border:1px solid #333;
+
+border-radius:9px;
+
+padding:5px 8px;
+
+font-size:7px;
+
+white-space:nowrap;
+}
+
+#infoBar .item{
+display:flex;
+align-items:center;
+gap:3px;
+}
+
+#infoBar .dot{
+width:7px;
+height:7px;
+border-radius:50%;
+background:#555;
+}
+
+#infoBar .dot.ok{
+background:#4CAF50;
+box-shadow:0 0 6px #4CAF50;
+}
+
+#infoBar .dot.bad{
+background:#f44336;
+box-shadow:0 0 6px #f44336;
+}
+
+#coords{
+position:absolute;
+top:32px;
+left:50%;
+transform:translateX(-50%);
+z-index:20;
+
+font-size:7px;
+color:#777;
+
+white-space:nowrap;
 }
 
 
@@ -73,44 +147,160 @@ html,body{
 ================================ */
 
 #distCircle{
-    position:absolute;
-    top:8px;
-    left:10px;
+position:absolute;
 
-    width:72px;
-    height:72px;
+top:8px;
+left:10px;
 
-    border-radius:50%;
-    border:2px solid #333;
+width:72px;
+height:72px;
 
-    background:#111;
+border-radius:50%;
 
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
+border:2px solid #333;
 
-    z-index:20;
+background:#111;
+
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+
+z-index:20;
 }
 
 .distVal{
-    font-size:12px;
-    font-weight:bold;
-    line-height:13px;
+font-size:12px;
+font-weight:bold;
+line-height:13px;
 }
 
 .distLabel{
-    font-size:6px;
-    color:#777;
-    margin-bottom:2px;
+font-size:6px;
+color:#777;
+margin-bottom:2px;
 }
 
 #distFront{
-    color:#4CAF50;
+color:#4CAF50;
 }
 
 #distRear{
-    color:#29b6f6;
+color:#29b6f6;
+}
+
+
+/* ================================
+   SMS
+================================ */
+
+#smsBtn{
+position:absolute;
+
+top:43px;
+left:10px;
+
+z-index:25;
+
+padding:5px 8px;
+
+font-size:7px;
+
+border:0;
+border-radius:6px;
+
+background:#222;
+color:white;
+}
+
+#msgPanel{
+display:none;
+
+position:absolute;
+
+top:68px;
+left:50%;
+
+transform:translateX(-50%);
+
+z-index:50;
+
+align-items:center;
+
+gap:5px;
+
+background:#000e;
+
+border:1px solid #444;
+
+border-radius:8px;
+
+padding:6px;
+}
+
+#msgPanel.open{
+display:flex;
+}
+
+#msgInput{
+width:130px;
+
+font-size:9px;
+
+background:#111;
+
+color:white;
+
+border:1px solid #444;
+
+border-radius:5px;
+
+padding:5px;
+}
+
+#msgSendBtn{
+font-size:8px;
+
+padding:5px 8px;
+
+border:0;
+
+border-radius:5px;
+
+background:#4CAF50;
+
+color:white;
+}
+
+#msgStatus{
+font-size:7px;
+color:#aaa;
+}
+
+
+/* ================================
+   GPS BUTTON
+================================ */
+
+#gpsReqBtn{
+position:absolute;
+
+top:43px;
+left:65px;
+
+z-index:25;
+
+padding:5px 8px;
+
+font-size:7px;
+
+border:0;
+
+border-radius:6px;
+
+background:#222;
+
+color:white;
 }
 
 
@@ -119,39 +309,49 @@ html,body{
 ================================ */
 
 #modeToggle{
-    position:absolute;
+position:absolute;
 
-    top:8px;
-    left:50%;
+top:43px;
+left:50%;
 
-    transform:translateX(-50%);
+transform:translateX(-50%);
 
-    display:flex;
-    gap:3px;
+display:flex;
 
-    background:#111;
-    border:1px solid #333;
+gap:3px;
 
-    padding:3px;
-    border-radius:8px;
+background:#111;
 
-    z-index:30;
+border:1px solid #333;
+
+padding:3px;
+
+border-radius:8px;
+
+z-index:30;
 }
 
 .modeBtn{
-    padding:5px 10px;
-    font-size:9px;
+padding:5px 10px;
 
-    border:0;
-    border-radius:6px;
+font-size:9px;
 
-    background:#222;
-    color:#888;
+border:0;
+
+border-radius:6px;
+
+background:#222;
+
+color:#888;
 }
 
 .modeBtn.active{
-    background:#4CAF50;
-    color:#fff;
+background:#4CAF50;
+color:white;
+}
+
+#sportBtn.active{
+background:#f44336;
 }
 
 
@@ -160,78 +360,80 @@ html,body{
 ================================ */
 
 #gaugeRow{
-    position:absolute;
+position:absolute;
 
-    top:46%;
-    left:50%;
+top:45%;
 
-    transform:translate(-50%,-50%);
+left:50%;
 
-    display:flex;
+transform:
+translate(-50%,-50%);
 
-    gap:18px;
+display:flex;
 
-    z-index:5;
+gap:12px;
+
+z-index:5;
 }
 
 .gauge{
-    position:relative;
+position:relative;
 
-    width:145px;
-    height:145px;
+width:140px;
+height:140px;
 
-    border-radius:50%;
+border-radius:50%;
 
-    border:6px solid #333;
+border:6px solid #333;
 
-    background:#111;
+background:#111;
 
-    box-shadow:
-        0 0 15px #111;
+box-shadow:
+0 0 18px #111;
 }
 
 .gaugeTitle{
-    position:absolute;
+position:absolute;
 
-    top:37px;
+top:35px;
 
-    width:100%;
+width:100%;
 
-    text-align:center;
+text-align:center;
 
-    color:#888;
+color:#888;
 
-    font-size:10px;
+font-size:9px;
 
-    letter-spacing:2px;
+letter-spacing:2px;
 }
 
 .gaugeNumber{
-    position:absolute;
+position:absolute;
 
-    top:57px;
+top:55px;
 
-    width:100%;
+width:100%;
 
-    text-align:center;
+text-align:center;
 
-    font-size:32px;
+font-size:31px;
 
-    font-weight:bold;
+font-weight:bold;
 }
 
 .gaugeUnit{
-    position:absolute;
+position:absolute;
 
-    top:99px;
+top:96px;
 
-    width:100%;
+width:100%;
 
-    text-align:center;
+text-align:center;
 
-    color:#888;
+color:#888;
 
-    font-size:8px;
+font-size:8px;
 }
 
 
@@ -240,82 +442,86 @@ html,body{
 ================================ */
 
 #wheelWrap{
-    position:absolute;
+position:absolute;
 
-    left:18px;
-    bottom:18px;
+left:15px;
 
-    width:135px;
-    height:135px;
+bottom:15px;
 
-    z-index:20;
+width:125px;
+
+height:125px;
+
+z-index:20;
 }
 
 #wheel{
-    width:100%;
-    height:100%;
+width:100%;
+height:100%;
 
-    border-radius:50%;
+border-radius:50%;
 
-    border:7px solid #555;
+border:7px solid #555;
 
-    background:#151515;
+background:#151515;
 
-    position:relative;
+position:relative;
 
-    transition:
-        transform .15s ease;
+transition:
+transform .15s ease;
 }
 
 #wheel:before{
-    content:"";
+content:"";
 
-    position:absolute;
+position:absolute;
 
-    left:50%;
-    top:15%;
+left:50%;
+top:15%;
 
-    width:9px;
-    height:70%;
+width:9px;
+height:70%;
 
-    transform:translateX(-50%);
+transform:
+translateX(-50%);
 
-    background:#333;
+background:#333;
 }
 
 #wheel:after{
-    content:"";
+content:"";
 
-    position:absolute;
+position:absolute;
 
-    top:50%;
-    left:15%;
+top:50%;
+left:15%;
 
-    width:70%;
-    height:9px;
+width:70%;
+height:9px;
 
-    transform:translateY(-50%);
+transform:
+translateY(-50%);
 
-    background:#333;
+background:#333;
 }
 
 #hub{
-    position:absolute;
+position:absolute;
 
-    left:50%;
-    top:50%;
+left:50%;
+top:50%;
 
-    width:42px;
-    height:42px;
+width:42px;
+height:42px;
 
-    transform:
-        translate(-50%,-50%);
+transform:
+translate(-50%,-50%);
 
-    border-radius:50%;
+border-radius:50%;
 
-    background:#222;
+background:#222;
 
-    border:3px solid #777;
+border:3px solid #777;
 }
 
 
@@ -324,53 +530,55 @@ html,body{
 ================================ */
 
 #pedalStack{
-    position:absolute;
+position:absolute;
 
-    right:18px;
-    bottom:18px;
+right:15px;
 
-    display:flex;
+bottom:15px;
 
-    flex-direction:column;
+display:flex;
 
-    gap:10px;
+flex-direction:column;
 
-    z-index:20;
+gap:8px;
+
+z-index:20;
 }
 
 .pedal{
-    width:52px;
-    height:82px;
+width:50px;
 
-    border-radius:10px;
+height:78px;
 
-    background:
-        linear-gradient(
-            #c8c8c8,
-            #555
-        );
+border-radius:10px;
 
-    color:#111;
+background:
+linear-gradient(
+#c8c8c8,
+#555
+);
 
-    display:flex;
+color:#111;
 
-    justify-content:center;
+display:flex;
 
-    align-items:flex-start;
+justify-content:center;
 
-    padding-top:8px;
+align-items:flex-start;
 
-    font-size:9px;
+padding-top:8px;
 
-    font-weight:bold;
+font-size:9px;
 
-    box-shadow:
-        0 3px 7px #000;
+font-weight:bold;
+
+box-shadow:
+0 3px 7px #000;
 }
 
 .pedal.active{
-    box-shadow:
-        0 0 16px #4CAF50;
+box-shadow:
+0 0 16px #4CAF50;
 }
 
 
@@ -379,155 +587,218 @@ html,body{
 ================================ */
 
 #cameraPanel{
-    position:absolute;
+position:absolute;
 
-    right:82px;
-    bottom:18px;
+right:75px;
 
-    width:125px;
+bottom:15px;
 
-    padding:5px;
+width:115px;
 
-    background:#000e;
+padding:5px;
 
-    border:1px solid #444;
+background:#000e;
 
-    border-radius:9px;
+border:1px solid #444;
 
-    z-index:25;
+border-radius:9px;
 
-    text-align:center;
+z-index:25;
+
+text-align:center;
 }
 
 #driverCamera{
-    width:100%;
-    height:70px;
+width:100%;
 
-    object-fit:cover;
+height:65px;
 
-    border-radius:6px;
+object-fit:cover;
 
-    background:#111;
+border-radius:6px;
 
-    display:block;
+background:#111;
 
-    transform:scaleX(-1);
+display:block;
+
+transform:scaleX(-1);
 }
 
 #cameraState{
-    font-size:7px;
+font-size:7px;
 
-    color:#aaa;
+color:#aaa;
 
-    margin-top:3px;
+margin-top:3px;
+}
+
+#eyeState,
+#drowsyState{
+font-size:6px;
+color:#777;
+margin-top:2px;
 }
 
 #cameraBtn,
 #switchCamera{
-    width:100%;
+width:100%;
 
-    margin-top:4px;
+margin-top:4px;
 
-    padding:5px;
+padding:5px;
 
-    font-size:7px;
+font-size:7px;
 
-    border:0;
+border:0;
 
-    border-radius:6px;
+border-radius:6px;
 
-    background:#2196F3;
+background:#2196F3;
 
-    color:white;
+color:white;
 }
 
 #switchCamera{
-    background:#444;
+background:#444;
 }
 
 
 /* ================================
-   SMALL PHONE SCREEN
+   COLLISION WARNING
+================================ */
+
+#collisionOverlay{
+display:none;
+
+position:absolute;
+
+inset:0;
+
+z-index:100;
+
+background:rgba(255,0,0,.12);
+
+pointer-events:none;
+}
+
+#collisionOverlay.active{
+display:block;
+}
+
+#collisionIcon{
+position:absolute;
+
+left:50%;
+top:55%;
+
+transform:
+translate(-50%,-50%);
+
+font-size:50px;
+
+display:none;
+}
+
+#collisionIcon.active{
+display:block;
+}
+
+
+/* ================================
+   MOBILE
 ================================ */
 
 @media(max-width:700px){
 
-    #gaugeRow{
-        top:43%;
+#gaugeRow{
 
-        transform:
-            translate(-50%,-50%)
-            scale(.85);
+top:43%;
 
-        gap:8px;
-    }
+transform:
+translate(-50%,-50%)
+scale(.78);
 
-    #wheelWrap{
-        width:125px;
-        height:125px;
+gap:5px;
+}
 
-        left:12px;
-        bottom:12px;
-    }
+#wheelWrap{
 
-    #pedalStack{
-        right:12px;
-        bottom:12px;
-    }
+width:115px;
+height:115px;
 
-    .pedal{
-        width:48px;
-        height:76px;
-    }
+left:12px;
+bottom:12px;
+}
 
-    #cameraPanel{
-        right:68px;
-        bottom:12px;
+#pedalStack{
 
-        width:115px;
-    }
+right:12px;
+bottom:12px;
+}
 
-    #driverCamera{
-        height:64px;
-    }
+.pedal{
+
+width:46px;
+height:72px;
+}
+
+#cameraPanel{
+
+right:65px;
+bottom:12px;
+
+width:105px;
+}
+
+#driverCamera{
+
+height:58px;
+}
 
 }
 
 
 /* ================================
-   VERY SMALL SCREEN
+   VERY SMALL
 ================================ */
 
 @media(max-width:500px){
 
-    #gaugeRow{
-        transform:
-            translate(-50%,-50%)
-            scale(.70);
-    }
+#gaugeRow{
 
-    #wheelWrap{
-        width:105px;
-        height:105px;
-    }
+transform:
+translate(-50%,-50%)
+scale(.68);
+}
 
-    #cameraPanel{
-        right:62px;
-        width:100px;
-    }
+#wheelWrap{
 
-    #driverCamera{
-        height:56px;
-    }
+width:100px;
+height:100px;
+}
 
-    .pedal{
-        width:43px;
-        height:68px;
-    }
+#cameraPanel{
+
+right:60px;
+
+width:95px;
+}
+
+#driverCamera{
+
+height:52px;
+}
+
+.pedal{
+
+width:42px;
+height:66px;
+}
 
 }
 
 </style>
+
 </head>
 
 
@@ -536,162 +807,285 @@ html,body{
 <div id="app">
 
 
-<!-- DISTANCE -->
+<!-- ============================
+     DISTANCE
+============================= -->
 
 <div id="distCircle">
 
-    <div class="distVal">
-        <span id="distFront">--</span>
-    </div>
+<div class="distVal">
+<span id="distFront">--</span>
+</div>
 
-    <div class="distLabel">
-        FRONT CM
-    </div>
+<div class="distLabel">
+FRONT CM
+</div>
 
-    <div class="distVal">
-        <span id="distRear">--</span>
-    </div>
+<div class="distVal">
+<span id="distRear">--</span>
+</div>
 
-    <div class="distLabel">
-        REAR CM
-    </div>
+<div class="distLabel">
+REAR CM
+</div>
 
 </div>
 
 
-<!-- BLE -->
+<!-- ============================
+     BLE
+============================= -->
 
 <div id="statusBox">
 
-    <div id="status">
-        Not connected
-    </div>
+<div id="status">
+Not connected
+</div>
 
-    <button id="connectBtn">
-        Connect to Car
-    </button>
+<button id="connectBtn">
+Connect to Car
+</button>
 
 </div>
 
 
-<!-- MODE -->
+<!-- ============================
+     GPS / GSM / SMS STATUS
+============================= -->
+
+<div id="infoBar">
+
+<div class="item">
+<span
+class="dot"
+id="gpsDot">
+</span>
+
+GPS
+</div>
+
+
+<div class="item">
+<span
+class="dot"
+id="gsmDot">
+</span>
+
+GSM
+</div>
+
+
+<div class="item">
+<span
+class="dot"
+id="smsDot">
+</span>
+
+SMS
+</div>
+
+</div>
+
+
+<div id="coords">
+no GPS fix
+</div>
+
+
+<!-- ============================
+     GPS REQUEST
+============================= -->
+
+<button id="gpsReqBtn">
+GPS
+</button>
+
+
+<!-- ============================
+     SMS
+============================= -->
+
+<button id="smsBtn">
+SMS
+</button>
+
+
+<div id="msgPanel">
+
+<input
+id="msgInput"
+type="text"
+placeholder="Enter message"
+maxlength="120">
+
+<button id="msgSendBtn">
+SEND
+</button>
+
+<div id="msgStatus"></div>
+
+</div>
+
+
+<!-- ============================
+     MODE
+============================= -->
 
 <div id="modeToggle">
 
-    <button
-        class="modeBtn active"
-        id="ecoBtn">
-        ECO
-    </button>
+<button
+class="modeBtn active"
+id="ecoBtn">
+ECO
+</button>
 
-    <button
-        class="modeBtn"
-        id="sportBtn">
-        SPORT
-    </button>
+<button
+class="modeBtn"
+id="sportBtn">
+SPORT
+</button>
 
 </div>
 
 
-<!-- GAUGES -->
+<!-- ============================
+     GAUGES
+============================= -->
 
 <div id="gaugeRow">
 
-    <div class="gauge">
 
-        <div class="gaugeTitle">
-            SPEED
-        </div>
+<div class="gauge">
 
-        <div
-            class="gaugeNumber"
-            id="speedNum">
-            0
-        </div>
+<div class="gaugeTitle">
+SPEED
+</div>
 
-        <div class="gaugeUnit">
-            KM/H
-        </div>
+<div
+class="gaugeNumber"
+id="speedNum">
+0
+</div>
 
-    </div>
-
-
-    <div class="gauge">
-
-        <div class="gaugeTitle">
-            RPM
-        </div>
-
-        <div
-            class="gaugeNumber"
-            id="rpmNum">
-            0
-        </div>
-
-        <div class="gaugeUnit">
-            RPM
-        </div>
-
-    </div>
+<div class="gaugeUnit">
+KM/H
+</div>
 
 </div>
 
 
-<!-- STEERING -->
+<div class="gauge">
+
+<div class="gaugeTitle">
+RPM
+</div>
+
+<div
+class="gaugeNumber"
+id="rpmNum">
+0
+</div>
+
+<div class="gaugeUnit">
+RPM
+</div>
+
+</div>
+
+
+</div>
+
+
+<!-- ============================
+     STEERING
+============================= -->
 
 <div id="wheelWrap">
 
-    <div id="wheel">
+<div id="wheel">
 
-        <div id="hub"></div>
+<div id="hub"></div>
 
-    </div>
+</div>
 
 </div>
 
 
-<!-- PEDALS -->
+<!-- ============================
+     DRIVE BUTTONS
+============================= -->
 
 <div id="pedalStack">
 
-    <div
-        class="pedal"
-        id="fwdBtn">
-        FWD
-    </div>
+<div
+class="pedal"
+id="fwdBtn">
 
-    <div
-        class="pedal"
-        id="backBtn">
-        BACK
-    </div>
+FWD
 
 </div>
 
 
-<!-- CAMERA -->
+<div
+class="pedal"
+id="backBtn">
+
+BACK
+
+</div>
+
+</div>
+
+
+<!-- ============================
+     CAMERA
+============================= -->
 
 <div id="cameraPanel">
 
-    <video
-        id="driverCamera"
-        autoplay
-        playsinline
-        muted>
-    </video>
+<video
+id="driverCamera"
+autoplay
+playsinline
+muted>
+</video>
 
-    <div id="cameraState">
-        CAMERA OFF
-    </div>
 
-    <button id="cameraBtn">
-        START CAMERA
-    </button>
+<div id="cameraState">
+CAMERA OFF
+</div>
 
-    <button id="switchCamera">
-        SWITCH
-    </button>
 
+<div id="eyeState">
+EYES: --
+</div>
+
+
+<div id="drowsyState">
+DROWSINESS: NORMAL
+</div>
+
+
+<button id="cameraBtn">
+START CAMERA
+</button>
+
+
+<button id="switchCamera">
+SWITCH
+</button>
+
+</div>
+
+
+<!-- ============================
+     COLLISION WARNING
+============================= -->
+
+<div id="collisionOverlay"></div>
+
+<div id="collisionIcon">
+⚠️
 </div>
 
 
@@ -701,4 +1095,5 @@ html,body{
 <script src="script.js"></script>
 
 </body>
+
 </html>
