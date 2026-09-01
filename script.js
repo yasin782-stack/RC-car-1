@@ -2480,3 +2480,99 @@ if(
 console.log(
     "RC CAR CONTROLLER READY"
 );
+/* =========================================
+   DROWSINESS WARNING
+========================================= */
+
+const drowsyWarning =
+    document.getElementById("drowsyWarning");
+
+const eyeState =
+    document.getElementById("eyeState");
+
+const drowsyState =
+    document.getElementById("drowsyState");
+
+
+function checkDrowsiness() {
+
+    if (!drowsyWarning) return;
+
+    const eyeText =
+        eyeState
+            ? eyeState.innerText.toUpperCase()
+            : "";
+
+    const drowsyText =
+        drowsyState
+            ? drowsyState.innerText.toUpperCase()
+            : "";
+
+
+    const eyesClosed =
+        eyeText.includes("CLOSED") ||
+        eyeText.includes("CLOSE");
+
+
+    const drowsy =
+        drowsyText.includes("DROWSY") ||
+        drowsyText.includes("WARNING") ||
+        drowsyText.includes("ALERT");
+
+
+    if (eyesClosed || drowsy) {
+
+        drowsyWarning.classList.add("active");
+
+    } else {
+
+        drowsyWarning.classList.remove("active");
+
+    }
+}
+
+
+/* =========================================
+   WATCH CAMERA STATUS
+========================================= */
+
+const drowsyObserver =
+    new MutationObserver(
+        checkDrowsiness
+    );
+
+
+if (eyeState) {
+
+    drowsyObserver.observe(
+        eyeState,
+        {
+            childList: true,
+            characterData: true,
+            subtree: true
+        }
+    );
+
+}
+
+
+if (drowsyState) {
+
+    drowsyObserver.observe(
+        drowsyState,
+        {
+            childList: true,
+            characterData: true,
+            subtree: true
+        }
+    );
+
+}
+
+
+/* =========================================
+   INITIAL CHECK
+========================================= */
+
+checkDrowsiness();
+
