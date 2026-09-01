@@ -1341,3 +1341,479 @@ if (!navigator.mediaDevices) {
     );
 
 }
+/* =========================================================
+   EYE / DROWSINESS DETECTION
+========================================================= */
+
+let faceMesh = null;
+let eyeDetectionRunning = false;
+
+let eyesClosedSince = null;
+let drowsySent = false;
+
+const EYES_CLOSED_TIME = 2000;
+
+
+/* =========================================================
+   CREATE FACE MESH
+========================================================= */
+
+function setupEyeDetection() {
+
+    if (typeof FaceMesh === "undefined") {
+
+        console.error(
+            "FaceMesh library not loaded"
+        );
+
+        if (cameraState) {
+            cameraState.textContent =
+                "EYE MODEL ERROR";
+        }
+
+        return;
+
+    }
+
+
+    faceMesh = new FaceMesh({
+
+        locateFile: (file) => {
+
+            return (
+                "https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/" +
+                file
+            );
+
+        }
+
+    });
+
+
+    faceMesh.setOptions({
+
+        maxNumFaces: 1,
+
+        refineLandmarks: true,
+
+        minDetectionConfidence: 0.5,
+
+        minTrackingConfidence: 0.5
+
+    });
+
+
+    faceMesh.onResults(
+        processEyeResults
+    );
+
+}
+
+
+/* =========================================================
+   DISTANCE BETWEEN TWO POINTS
+========================================================= */
+
+function landmarkDistance(a,b) {
+
+    const dx =
+        a.x - b.x;
+
+    const dy =
+        a.y - b.y;
+
+    return Math.sqrt(
+        dx * dx +
+        dy * dy
+    );
+
+}
+
+
+/* =========================================================
+   EYE OPEN RATIO
+========================================================= */
+
+function getEyeRatio(
+    top,
+    bottom,
+    left,
+    right
+) {
+
+    const vertical =
+        landmarkDistance(
+            top,
+            bottom
+        );
+
+
+    const horizontal =
+        landmarkDistance(
+            left,
+            right
+        );
+
+
+    if (horizontal === 0)
+        return 0;
+
+
+    return vertical / horizontal;
+
+}
+
+
+/* =========================================================
+   PROCESS FACE
+========================================================= */
+
+function processEyeResults(
+    results
+) {
+
+    if (!results.multiFaceLandmarks ||
+        results.multiFaceLandmarks.length === 0) {
+
+        eyesClosedSince = null;
+
+        setEyeStatus(
+            "NO FACE"
+        );
+
+        return;
+
+    }
+
+
+    const landmarks =
+        results.multiFaceLandmarks[0];
+
+
+    /*
+     * Left eye landmarks
+     */
+
+    const leftRatio =
+        getEyeRatio(
+            landmarks[159],
+            landmarks[145],
+            landmarks[33],
+            landmarks[133]
+        );
+
+
+    /*
+     * Right eye landmarks
+     */
+
+    const rightRatio =
+        getEyeRatio(
+            landmarks[386],
+            landmarks[374],
+            landmarks[362],
+            landmarks[263]
+        );
+
+
+    const eyeRatio =
+        (
+            leftRatio +
+            rightRatio
+        ) / 2;
+
+
+    /*
+     * Approximate threshold.
+     * Individual faces/camera angles can require
+     * calibration.
+     */
+
+    const eyesClosed =
+        eyeRatio < 0.20;
+
+
+    if (eyesClosed) {
+
+        if (!eyesClosedSince) {
+
+            eyesClosedSince =
+                Date.now();
+
+        }
+
+
+        const closedFor =
+            Date.now() -
+            eyesClosedSince;
+
+
+        if (
+            closedFor >=
+            EYES_CLOSED_TIME
+        ) {
+
+            setEyeStatus(
+                "DROWSY"
+            );
+
+
+            if (!drowsySent) {
+
+                drowsySent =
+                    true;
+
+
+                /*
+                 * Tell ESP32 that drowsiness
+                 * has been detected.
+                 */
+
+                sendCmd(
+                    "DROWSY:1"
+                );
+
+
+                console.log(
+                    "⚠️ DROWSINESS DETECTED"
+                );
+
+            }
+
+        }
+
+        else {
+
+            setEyeStatus(
+                "EYES CLOSING"
+            );
+
+        }
+
+    }
+
+    else {
+
+        eyesClosedSince =
+            null;
+
+
+        setEyeStatus(
+            "EYES OPEN"
+        );
+
+
+        /*
+         * Tell ESP32 that driver is awake again.
+         */
+
+        if (drowsySent) {
+
+            drowsySent =
+                false;
+
+
+            sendCmd(
+                "DROWSY:0"
+            );
+
+
+            console.log(
+                "✅ DRIVER AWAKE"
+            );
+
+        }
+
+    }
+
+}
+
+
+/* =========================================================
+   EYE STATUS DISPLAY
+========================================================= */
+
+function setEyeStatus(
+    state
+) {
+
+    const eyeState =
+        document.getElementById(
+            "eyeState"
+        );
+
+
+    const drowsyState =
+        document.getElementById(
+            "drowsyState"
+        );
+
+
+    if (eyeState) {
+
+        eyeState.textContent =
+            "EYES: " +
+            state;
+
+    }
+
+
+    if (drowsyState) {
+
+        if (state === "DROWSY") {
+
+            drowsyState.textContent =
+                "DROWSINESS: DETECTED";
+
+        }
+
+        else {
+
+            drowsyState.textContent =
+                "DROWSINESS: NORMAL";
+
+        }
+
+    }
+
+}
+
+
+/* =========================================================
+   START EYE PROCESSING
+========================================================= */
+
+async function startEyeDetection() {
+
+    if (!faceMesh) {
+
+        setupEyeDetection();
+
+    }
+
+
+    if (!faceMesh)
+        return;
+
+
+    if (eyeDetectionRunning)
+        return;
+
+
+    eyeDetectionRunning =
+        true;
+
+
+    async function processCamera() {
+
+        if (!eyeDetectionRunning)
+            return;
+
+
+        if (
+            cameraVideo.readyState >=
+            2
+        ) {
+
+            try {
+
+                await faceMesh.send({
+                    image:
+                        cameraVideo
+                });
+
+            }
+
+            catch(error) {
+
+                console.error(
+                    "Face detection error:",
+                    error
+                );
+
+            }
+
+        }
+
+
+        requestAnimationFrame(
+            processCamera
+        );
+
+    }
+
+
+    processCamera();
+
+}
+
+
+/* =========================================================
+   STOP EYE PROCESSING
+========================================================= */
+
+function stopEyeDetection() {
+
+    eyeDetectionRunning =
+        false;
+
+    eyesClosedSince =
+        null;
+
+    drowsySent =
+        false;
+
+
+    setEyeStatus(
+        "CAMERA OFF"
+    );
+
+}
+
+
+/* =========================================================
+   MODIFY CAMERA START
+========================================================= */
+
+const originalStartCamera =
+    startCamera;
+
+
+startCamera =
+async function() {
+
+    await originalStartCamera();
+
+
+    if (cameraStream) {
+
+        await startEyeDetection();
+
+    }
+
+};
+
+
+/* =========================================================
+   MODIFY CAMERA STOP
+========================================================= */
+
+const originalStopCamera =
+    stopCamera;
+
+
+stopCamera =
+function() {
+
+    stopEyeDetection();
+
+    originalStopCamera();
+
+};
+
+
+/* =========================================================
+   INITIALIZE
+========================================================= */
+
+setupEyeDetection();
