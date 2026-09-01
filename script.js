@@ -1,6 +1,12 @@
 /* =========================================================
    RC CAR CONTROLLER
-   BLE + GPS + GSM + SMS + CAMERA + EYE DETECTION
+   PART 1 / 2
+   BLE + GPS + GSM + SMS + CAMERA + CONTROLS
+========================================================= */
+
+
+/* =========================================================
+   BLE UUIDs
 ========================================================= */
 
 const SERVICE_UUID =
@@ -19,6 +25,9 @@ const MAX_ANGLE = 70;
    ELEMENTS
 ========================================================= */
 
+const app =
+document.getElementById("app");
+
 const statusEl =
 document.getElementById("status");
 
@@ -36,9 +45,6 @@ document.getElementById("ecoBtn");
 
 const sportBtn =
 document.getElementById("sportBtn");
-
-const app =
-document.getElementById("app");
 
 const wheelWrap =
 document.getElementById("wheelWrap");
@@ -72,34 +78,84 @@ document.getElementById("switchCamera");
 
 
 /* =========================================================
-   BLE
+   BLE VARIABLES
 ========================================================= */
 
 let bleDevice = null;
+
 let bleServer = null;
+
 let cmdChar = null;
+
 let teleChar = null;
 
 
 /* =========================================================
-   CAMERA
+   CAMERA VARIABLES
 ========================================================= */
 
 let cameraStream = null;
 
 let cameraMode = "user";
 
-let faceMesh = null;
+let cameraRunning = false;
 
-let eyeDetectionRunning = false;
 
-let eyesClosedSince = null;
+/* =========================================================
+   EYE DETECTION VARIABLES
+========================================================= */
 
-let drowsySent = false;
+let faceLandmarker = null;
 
-let lastFaceSeen = 0;
+let detectingEyes = false;
 
-const EYES_CLOSED_TIME = 2000;
+let eyesClosedSince = 0;
+
+let drowsyWarningSent = false;
+
+let drowsyAlertSent = false;
+
+
+/*
+   ESP32 timing:
+
+   2 seconds  -> EYE:WARN
+   10 seconds -> EYE:ALERT
+*/
+
+const EYE_WARN_TIME = 2000;
+
+const EYE_ALERT_TIME = 10000;
+
+
+/*
+   Eye closure threshold.
+*/
+
+const CLOSED_THRESHOLD = 0.20;
+
+
+/* =========================================================
+   EYE LANDMARKS
+========================================================= */
+
+const LEFT_EYE = [
+    33,
+    160,
+    158,
+    133,
+    153,
+    144
+];
+
+const RIGHT_EYE = [
+    362,
+    385,
+    387,
+    263,
+    373,
+    380
+];
 
 
 /* =========================================================
@@ -120,6 +176,7 @@ async function connectBLE(){
         "Web Bluetooth not supported";
 
         return;
+
     }
 
 
@@ -193,7 +250,10 @@ async function connectBLE(){
 
         statusEl.textContent =
         "Connected to " +
-        (bleDevice.name || "ESP32");
+        (
+            bleDevice.name ||
+            "ESP32"
+        );
 
 
         connectBtn.textContent =
@@ -201,7 +261,7 @@ async function connectBLE(){
 
 
         console.log(
-            "BLE connected"
+            "BLE CONNECTED"
         );
 
     }
@@ -224,7 +284,7 @@ async function connectBLE(){
 
 
 /* =========================================================
-   DISCONNECTED
+   BLE DISCONNECT
 ========================================================= */
 
 function onDisconnected(){
@@ -251,16 +311,18 @@ function onDisconnected(){
    SEND BLE COMMAND
 ========================================================= */
 
-async function sendCmd(command){
+async function sendCmd(
+    command
+){
 
     if(!cmdChar){
 
         console.log(
-            "Not connected:",
+            "BLE not connected:",
             command
         );
 
-        return;
+        return false;
 
     }
 
@@ -269,6 +331,12 @@ async function sendCmd(command){
 
         const data =
         new TextEncoder().encode(
+            command
+        );
+
+
+        console.log(
+            "BLE SEND:",
             command
         );
 
@@ -295,6 +363,17 @@ async function sendCmd(command){
 
         }
 
+        else{
+
+            throw new Error(
+                "BLE characteristic is not writable"
+            );
+
+        }
+
+
+        return true;
+
     }
 
     catch(error){
@@ -303,6 +382,8 @@ async function sendCmd(command){
             "BLE SEND ERROR:",
             error
         );
+
+        return false;
 
     }
 
@@ -313,7 +394,9 @@ async function sendCmd(command){
    TELEMETRY
 ========================================================= */
 
-function onTelemetry(event){
+function onTelemetry(
+    event
+){
 
     const value =
     new TextDecoder().decode(
@@ -327,6 +410,14 @@ function onTelemetry(event){
     );
 
 
+    /*
+     * FRONT / REAR DISTANCE
+     *
+     * Example:
+     *
+     * F:50,R:80
+     */
+
     const distance =
     value.match(
         /F:(-?\d+),R:(-?\d+)/
@@ -338,11 +429,30 @@ function onTelemetry(event){
         distFront.textContent =
         distance[1];
 
+
         distRear.textContent =
         distance[2];
 
+
+        updateCollision(
+            parseInt(
+                distance[1],
+                10
+            ),
+
+            parseInt(
+                distance[2],
+                10
+            )
+
+        );
+
     }
 
+
+    /*
+     * GPS
+     */
 
     const gpsMatch =
     value.match(
@@ -374,23 +484,26 @@ function onTelemetry(event){
     );
 
 
-    if(gpsMatch && gpsDot){
+    if(
+        gpsMatch &&
+        gpsDot
+    ){
 
-        const fixed =
+        const hasFix =
         gpsMatch[1] === "1";
 
 
         gpsDot.className =
         "dot " +
         (
-            fixed
+            hasFix
             ? "ok"
             : "bad"
         );
 
 
         if(
-            fixed &&
+            hasFix &&
             latMatch &&
             lonMatch &&
             coords
@@ -412,6 +525,10 @@ function onTelemetry(event){
 
     }
 
+
+    /*
+     * GSM
+     */
 
     const gsmMatch =
     value.match(
@@ -440,6 +557,10 @@ function onTelemetry(event){
 
     }
 
+
+    /*
+     * SMS
+     */
 
     const smsMatch =
     value.match(
@@ -489,7 +610,72 @@ function onTelemetry(event){
 
 
 /* =========================================================
-   GPS REQUEST
+   COLLISION DISPLAY
+========================================================= */
+
+function updateCollision(
+    front,
+    rear
+){
+
+    const overlay =
+    document.getElementById(
+        "collisionOverlay"
+    );
+
+
+    const icon =
+    document.getElementById(
+        "collisionIcon"
+    );
+
+
+    if(
+        !overlay ||
+        !icon
+    ){
+
+        return;
+
+    }
+
+
+    const safeDistance =
+    app.classList.contains(
+        "sport"
+    )
+    ? 38
+    : 20;
+
+
+    const tooClose =
+    (
+        front > 0 &&
+        front < safeDistance
+    )
+    ||
+    (
+        rear > 0 &&
+        rear < safeDistance
+    );
+
+
+    overlay.classList.toggle(
+        "active",
+        tooClose
+    );
+
+
+    icon.classList.toggle(
+        "active",
+        tooClose
+    );
+
+}
+
+
+/* =========================================================
+   GPS BUTTON
 ========================================================= */
 
 const gpsReqBtn =
@@ -506,6 +692,21 @@ if(gpsReqBtn){
 
             sendCmd(
                 "GPS?"
+            );
+
+
+            gpsReqBtn.style.opacity =
+            "0.5";
+
+
+            setTimeout(
+                () => {
+
+                    gpsReqBtn.style.opacity =
+                    "1";
+
+                },
+                800
             );
 
         }
@@ -568,7 +769,7 @@ if(msgSendBtn){
 
     msgSendBtn.addEventListener(
         "click",
-        () => {
+        async () => {
 
             if(!msgInput)
                 return;
@@ -578,16 +779,12 @@ if(msgSendBtn){
             msgInput.value.trim();
 
 
-            if(!text)
-                return;
-
-
-            if(!cmdChar){
+            if(!text){
 
                 if(msgStatus){
 
                     msgStatus.textContent =
-                    "Not connected";
+                    "Enter a message";
 
                 }
 
@@ -596,21 +793,59 @@ if(msgSendBtn){
             }
 
 
-            sendCmd(
-                "MSG:" + text
-            );
+            if(!cmdChar){
+
+                if(msgStatus){
+
+                    msgStatus.textContent =
+                    "Connect to Car first";
+
+                }
+
+                return;
+
+            }
 
 
             if(msgStatus){
 
                 msgStatus.textContent =
-                "Message sent";
+                "Sending...";
 
             }
 
 
-            msgInput.value =
-            "";
+            const sent =
+            await sendCmd(
+                "MSG:" + text
+            );
+
+
+            if(sent){
+
+                if(msgStatus){
+
+                    msgStatus.textContent =
+                    "SMS command sent";
+
+                }
+
+
+                msgInput.value =
+                "";
+
+            }
+
+            else{
+
+                if(msgStatus){
+
+                    msgStatus.textContent =
+                    "Send failed";
+
+                }
+
+            }
 
         }
     );
@@ -619,7 +854,7 @@ if(msgSendBtn){
 
 
 /* =========================================================
-   ECO / SPORT
+   ECO MODE
 ========================================================= */
 
 ecoBtn.addEventListener(
@@ -645,9 +880,18 @@ ecoBtn.addEventListener(
             "MODE:ECO"
         );
 
+
+        console.log(
+            "ECO MODE"
+        );
+
     }
 );
 
+
+/* =========================================================
+   SPORT MODE
+========================================================= */
 
 sportBtn.addEventListener(
     "click",
@@ -672,6 +916,11 @@ sportBtn.addEventListener(
             "MODE:SPORT"
         );
 
+
+        console.log(
+            "SPORT MODE"
+        );
+
     }
 );
 
@@ -680,23 +929,51 @@ sportBtn.addEventListener(
    SPEED / RPM
 ========================================================= */
 
-const MAX_SPEED = 120;
+const MAX_SPEED =
+120;
 
-const MAX_RPM = 8000;
+const MAX_RPM =
+8000;
 
-let currentSpeed = 0;
+let currentSpeed =
+0;
 
-let targetSpeed = 0;
+let targetSpeed =
+0;
 
 
 function setTargetSpeed(
     moving
 ){
 
-    targetSpeed =
-    moving
-    ? MAX_SPEED
-    : 0;
+    if(!moving){
+
+        targetSpeed =
+        0;
+
+        return;
+
+    }
+
+
+    if(
+        app.classList.contains(
+            "sport"
+        )
+    ){
+
+        targetSpeed =
+        MAX_SPEED;
+
+    }
+
+    else{
+
+        targetSpeed =
+        MAX_SPEED *
+        0.55;
+
+    }
 
 }
 
@@ -758,7 +1035,7 @@ updateGauge();
 
 
 /* =========================================================
-   DRIVE
+   DRIVE START
 ========================================================= */
 
 function startDrive(
@@ -768,6 +1045,24 @@ function startDrive(
 
     if(!button)
         return;
+
+
+    if(command === "F"){
+
+        backBtn.classList.remove(
+            "active"
+        );
+
+    }
+
+
+    if(command === "B"){
+
+        fwdBtn.classList.remove(
+            "active"
+        );
+
+    }
 
 
     button.classList.add(
@@ -787,18 +1082,28 @@ function startDrive(
 }
 
 
+/* =========================================================
+   DRIVE STOP
+========================================================= */
+
 function stopDrive(){
 
-    if(fwdBtn)
+    if(fwdBtn){
+
         fwdBtn.classList.remove(
             "active"
         );
 
+    }
 
-    if(backBtn)
+
+    if(backBtn){
+
         backBtn.classList.remove(
             "active"
         );
+
+    }
 
 
     sendCmd(
@@ -812,6 +1117,10 @@ function stopDrive(){
 
 }
 
+
+/* =========================================================
+   DRIVE BUTTON SETUP
+========================================================= */
 
 function setupDriveButton(
     button,
@@ -829,30 +1138,6 @@ function setupDriveButton(
             event.preventDefault();
 
 
-            if(
-                command === "F" &&
-                backBtn
-            ){
-
-                backBtn.classList.remove(
-                    "active"
-                );
-
-            }
-
-
-            if(
-                command === "B" &&
-                fwdBtn
-            ){
-
-                fwdBtn.classList.remove(
-                    "active"
-                );
-
-            }
-
-
             startDrive(
                 button,
                 command
@@ -867,6 +1152,7 @@ function setupDriveButton(
         event => {
 
             event.preventDefault();
+
 
             stopDrive();
 
@@ -884,9 +1170,7 @@ function setupDriveButton(
         "pointerleave",
         event => {
 
-            if(
-                event.buttons
-            ){
+            if(event.buttons){
 
                 stopDrive();
 
@@ -914,9 +1198,11 @@ setupDriveButton(
    STEERING
 ========================================================= */
 
-let steeringActive = false;
+let steeringActive =
+false;
 
-let lastSteeringSend = 0;
+let lastSteeringSend =
+0;
 
 
 function getSteeringAngle(
@@ -929,12 +1215,14 @@ function getSteeringAngle(
 
     const cx =
     rect.left +
-    rect.width / 2;
+    rect.width /
+    2;
 
 
     const cy =
     rect.top +
-    rect.height / 2;
+    rect.height /
+    2;
 
 
     const dx =
@@ -960,6 +1248,7 @@ function getSteeringAngle(
     angle =
     Math.max(
         -MAX_ANGLE,
+
         Math.min(
             MAX_ANGLE,
             angle
@@ -971,6 +1260,10 @@ function getSteeringAngle(
 
 }
 
+
+/* =========================================================
+   SEND STEERING
+========================================================= */
 
 function sendSteering(
     angle
@@ -997,17 +1290,24 @@ function sendSteering(
 
     sendCmd(
         "L:" +
-        Math.round(angle)
+        Math.round(
+            angle
+        )
     );
 
 }
 
+
+/* =========================================================
+   STEERING DOWN
+========================================================= */
 
 wheelWrap.addEventListener(
     "pointerdown",
     event => {
 
         event.preventDefault();
+
 
         steeringActive =
         true;
@@ -1040,6 +1340,10 @@ wheelWrap.addEventListener(
 );
 
 
+/* =========================================================
+   STEERING MOVE
+========================================================= */
+
 wheelWrap.addEventListener(
     "pointermove",
     event => {
@@ -1069,7 +1373,15 @@ wheelWrap.addEventListener(
 );
 
 
+/* =========================================================
+   STEERING RELEASE
+========================================================= */
+
 function releaseSteering(){
+
+    if(!steeringActive)
+        return;
+
 
     steeringActive =
     false;
@@ -1103,14 +1415,14 @@ wheelWrap.addEventListener(
 
 
 /* =========================================================
-   CAMERA
+   CAMERA BUTTON
 ========================================================= */
 
 cameraBtn.addEventListener(
     "click",
     async () => {
 
-        if(cameraStream){
+        if(cameraRunning){
 
             stopCamera();
 
@@ -1125,6 +1437,9 @@ cameraBtn.addEventListener(
     }
 );
 
+/* =========================================================
+   START CAMERA
+========================================================= */
 
 async function startCamera(){
 
@@ -1134,17 +1449,16 @@ async function startCamera(){
     ){
 
         cameraState.textContent =
-        "CAMERA API UNAVAILABLE";
+        "CAMERA NOT SUPPORTED";
 
         return;
-
     }
 
 
     try{
 
         cameraState.textContent =
-        "REQUESTING CAMERA...";
+        "STARTING CAMERA...";
 
 
         if(cameraStream){
@@ -1159,55 +1473,29 @@ async function startCamera(){
         }
 
 
-        /*
-         * Try the selected camera first.
-         */
+        cameraStream =
+        await navigator.mediaDevices.getUserMedia({
 
-        try{
+            video:{
 
-            cameraStream =
-            await navigator
-            .mediaDevices
-            .getUserMedia({
-
-                video:{
-                    facingMode:{
-                        exact:
-                        cameraMode
-                    }
+                facingMode:{
+                    ideal:
+                    cameraMode
                 },
 
-                audio:false
-
-            });
-
-        }
-
-        catch(error){
-
-            /*
-             * Some phones do not support
-             * exact facingMode.
-             * Retry with ideal.
-             */
-
-            cameraStream =
-            await navigator
-            .mediaDevices
-            .getUserMedia({
-
-                video:{
-                    facingMode:{
-                        ideal:
-                        cameraMode
-                    }
+                width:{
+                    ideal:640
                 },
 
-                audio:false
+                height:{
+                    ideal:480
+                }
 
-            });
+            },
 
-        }
+            audio:false
+
+        });
 
 
         cameraVideo.srcObject =
@@ -1217,21 +1505,25 @@ async function startCamera(){
         await cameraVideo.play();
 
 
-        cameraState.textContent =
-        cameraMode === "user"
-        ? "FRONT CAMERA"
-        : "BACK CAMERA";
+        cameraRunning =
+        true;
 
 
         cameraBtn.textContent =
         "STOP CAMERA";
 
 
-        startEyeDetection();
+        cameraState.textContent =
+        cameraMode === "user"
+        ? "FRONT CAMERA"
+        : "BACK CAMERA";
+
+
+        await initializeEyeDetection();
 
 
         console.log(
-            "Camera started"
+            "CAMERA STARTED"
         );
 
     }
@@ -1247,10 +1539,61 @@ async function startCamera(){
         cameraStream =
         null;
 
+        cameraRunning =
+        false;
+
 
         cameraState.textContent =
-        "CAMERA ERROR: " +
-        error.name;
+        "CAMERA ERROR";
+
+
+        const eyeState =
+        document.getElementById(
+            "eyeState"
+        );
+
+
+        if(eyeState){
+
+            if(
+                error.name ===
+                "NotAllowedError"
+            ){
+
+                eyeState.textContent =
+                "CAMERA PERMISSION BLOCKED";
+
+            }
+
+            else if(
+                error.name ===
+                "NotFoundError"
+            ){
+
+                eyeState.textContent =
+                "NO CAMERA FOUND";
+
+            }
+
+            else if(
+                error.name ===
+                "NotReadableError"
+            ){
+
+                eyeState.textContent =
+                "CAMERA BUSY";
+
+            }
+
+            else{
+
+                eyeState.textContent =
+                error.name ||
+                "CHECK CAMERA";
+
+            }
+
+        }
 
     }
 
@@ -1286,12 +1629,44 @@ function stopCamera(){
     null;
 
 
+    cameraRunning =
+    false;
+
+
     cameraState.textContent =
     "CAMERA OFF";
 
 
     cameraBtn.textContent =
     "START CAMERA";
+
+
+    const eyeState =
+    document.getElementById(
+        "eyeState"
+    );
+
+
+    const drowsyState =
+    document.getElementById(
+        "drowsyState"
+    );
+
+
+    if(eyeState){
+
+        eyeState.textContent =
+        "EYES: --";
+
+    }
+
+
+    if(drowsyState){
+
+        drowsyState.textContent =
+        "DROWSINESS: NORMAL";
+
+    }
 
 }
 
@@ -1310,7 +1685,7 @@ switchCameraBtn.addEventListener(
         : "user";
 
 
-        if(cameraStream){
+        if(cameraRunning){
 
             await startCamera();
 
@@ -1321,75 +1696,278 @@ switchCameraBtn.addEventListener(
 
 
 /* =========================================================
-   FACE MESH SETUP
+   EYE DETECTION
 ========================================================= */
 
-function setupEyeDetection(){
+async function initializeEyeDetection(){
 
-    if(
-        typeof FaceMesh ===
-        "undefined"
-    ){
+    if(faceLandmarker){
 
-        console.warn(
-            "FaceMesh not loaded yet"
-        );
+        startEyeDetectionLoop();
 
-        return false;
+        return;
 
     }
 
 
-    if(faceMesh)
-        return true;
+    try{
+
+        cameraState.textContent =
+        "LOADING AI...";
 
 
-    faceMesh =
-    new FaceMesh({
+        const vision =
+        await import(
+            "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/+esm"
+        );
 
-        locateFile:
-        file => {
 
-            return (
-                "https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/" +
-                file
+        const {
+            FaceLandmarker,
+            FilesetResolver
+        } = vision;
+
+
+        const filesetResolver =
+        await FilesetResolver.forVisionTasks(
+
+            "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/wasm"
+
+        );
+
+
+        try{
+
+            faceLandmarker =
+            await FaceLandmarker.createFromOptions(
+                filesetResolver,
+                {
+
+                    baseOptions:{
+
+                        modelAssetPath:
+                        "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+
+                        delegate:
+                        "GPU"
+
+                    },
+
+                    runningMode:
+                    "VIDEO",
+
+                    numFaces:
+                    1
+
+                }
             );
 
         }
 
-    });
+        catch(gpuError){
+
+            console.warn(
+                "GPU unavailable. Using CPU.",
+                gpuError
+            );
 
 
-    faceMesh.setOptions({
+            faceLandmarker =
+            await FaceLandmarker.createFromOptions(
+                filesetResolver,
+                {
 
-        maxNumFaces:1,
+                    baseOptions:{
 
-        refineLandmarks:true,
+                        modelAssetPath:
+                        "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
 
-        minDetectionConfidence:
-        0.5,
+                        delegate:
+                        "CPU"
 
-        minTrackingConfidence:
-        0.5
+                    },
 
-    });
+                    runningMode:
+                    "VIDEO",
+
+                    numFaces:
+                    1
+
+                }
+            );
+
+        }
 
 
-    faceMesh.onResults(
-        processEyeResults
-    );
+        cameraState.textContent =
+        "AI READY";
 
 
-    return true;
+        startEyeDetectionLoop();
+
+    }
+
+    catch(error){
+
+        console.error(
+            "AI LOAD ERROR:",
+            error
+        );
+
+
+        cameraState.textContent =
+        "AI LOAD ERROR";
+
+
+        const eyeState =
+        document.getElementById(
+            "eyeState"
+        );
+
+
+        if(eyeState){
+
+            eyeState.textContent =
+            "AI ERROR - CHECK INTERNET";
+
+        }
+
+    }
 
 }
 
 
 /* =========================================================
-   LANDMARK DISTANCE
+   EYE DETECTION LOOP
 ========================================================= */
 
-function landmarkDistance(
+function startEyeDetectionLoop(){
+
+    if(detectingEyes)
+        return;
+
+
+    detectingEyes =
+    true;
+
+
+    requestAnimationFrame(
+        detectEyesFrame
+    );
+
+}
+
+
+/* =========================================================
+   DETECT EYES FRAME
+========================================================= */
+
+function detectEyesFrame(){
+
+    if(
+        !cameraRunning ||
+        !faceLandmarker
+    ){
+
+        detectingEyes =
+        false;
+
+        return;
+
+    }
+
+
+    try{
+
+        const now =
+        performance.now();
+
+
+        const result =
+        faceLandmarker.detectForVideo(
+            cameraVideo,
+            now
+        );
+
+
+        if(
+            result &&
+            result.faceLandmarks &&
+            result.faceLandmarks.length > 0
+        ){
+
+            const landmarks =
+            result.faceLandmarks[0];
+
+
+            processEyeState(
+                calculateEyesClosed(
+                    landmarks
+                )
+            );
+
+        }
+
+        else{
+
+            setEyeStatus(
+                "FACE NOT DETECTED"
+            );
+
+
+            /*
+             * Do not treat this as a camera error.
+             */
+
+            eyesClosedSince =
+            0;
+
+
+            if(
+                drowsyWarningSent ||
+                drowsyAlertSent
+            ){
+
+                drowsyWarningSent =
+                false;
+
+
+                drowsyAlertSent =
+                false;
+
+
+                sendCmd(
+                    "EYE:CLEAR"
+                );
+
+            }
+
+        }
+
+    }
+
+    catch(error){
+
+        console.warn(
+            "Temporary eye detection issue:",
+            error
+        );
+
+    }
+
+
+    requestAnimationFrame(
+        detectEyesFrame
+    );
+
+}
+
+
+/* =========================================================
+   3D LANDMARK DISTANCE
+========================================================= */
+
+function distance3D(
     a,
     b
 ){
@@ -1402,154 +1980,309 @@ function landmarkDistance(
     a.y - b.y;
 
 
+    const dz =
+    (
+        a.z || 0
+    )
+    -
+    (
+        b.z || 0
+    );
+
+
     return Math.sqrt(
         dx * dx +
-        dy * dy
+        dy * dy +
+        dz * dz
     );
 
 }
 
 
 /* =========================================================
-   EYE RATIO
+   EYE ASPECT RATIO
 ========================================================= */
 
-function getEyeRatio(
-    top,
-    bottom,
-    left,
-    right
+function eyeAspectRatio(
+    landmarks,
+    points
 ){
 
-    const vertical =
-    landmarkDistance(
-        top,
-        bottom
+    const p1 =
+    landmarks[points[0]];
+
+    const p2 =
+    landmarks[points[1]];
+
+    const p3 =
+    landmarks[points[2]];
+
+    const p4 =
+    landmarks[points[3]];
+
+    const p5 =
+    landmarks[points[4]];
+
+    const p6 =
+    landmarks[points[5]];
+
+
+    if(
+        !p1 ||
+        !p2 ||
+        !p3 ||
+        !p4 ||
+        !p5 ||
+        !p6
+    ){
+
+        return 1;
+
+    }
+
+
+    const vertical1 =
+    distance3D(
+        p2,
+        p6
+    );
+
+
+    const vertical2 =
+    distance3D(
+        p3,
+        p5
     );
 
 
     const horizontal =
-    landmarkDistance(
-        left,
-        right
+    distance3D(
+        p1,
+        p4
     );
 
 
-    if(horizontal === 0)
-        return 0;
+    if(
+        horizontal === 0
+    ){
+
+        return 1;
+
+    }
 
 
-        return vertical /
-    horizontal;
+    return (
+        vertical1 +
+        vertical2
+    )
+    /
+    (
+        2 *
+        horizontal
+    );
 
 }
 
 
 /* =========================================================
-   EYE RESULTS
+   CALCULATE EYE CLOSURE
 ========================================================= */
 
-function processEyeResults(results){
+function calculateEyesClosed(
+    landmarks
+){
 
-    if(
-        !results.multiFaceLandmarks ||
-        results.multiFaceLandmarks.length === 0
-    ){
-
-        setEyeStatus(
-            "FACE NOT DETECTED"
-        );
-
-        eyesClosedSince = null;
-
-        return;
-    }
+    const leftEAR =
+    eyeAspectRatio(
+        landmarks,
+        LEFT_EYE
+    );
 
 
-    lastFaceSeen = Date.now();
+    const rightEAR =
+    eyeAspectRatio(
+        landmarks,
+        RIGHT_EYE
+    );
 
 
-    const landmarks =
-        results.multiFaceLandmarks[0];
+    const averageEAR =
+    (
+        leftEAR +
+        rightEAR
+    )
+    /
+    2;
 
 
-    const leftRatio =
-        getEyeRatio(
-            landmarks[159],
-            landmarks[145],
-            landmarks[33],
-            landmarks[133]
-        );
+    return (
+        averageEAR <
+        CLOSED_THRESHOLD
+    );
+
+}
 
 
-    const rightRatio =
-        getEyeRatio(
-            landmarks[386],
-            landmarks[374],
-            landmarks[362],
-            landmarks[263]
-        );
+/* =========================================================
+   PROCESS EYE STATE
+========================================================= */
 
-
-    const eyeRatio =
-        (
-            leftRatio +
-            rightRatio
-        ) / 2;
-
-
-    const eyesClosed =
-        eyeRatio < 0.20;
-
+function processEyeState(
+    eyesClosed
+){
 
     if(eyesClosed){
 
-        if(!eyesClosedSince){
+        if(
+            eyesClosedSince === 0
+        ){
 
             eyesClosedSince =
-                Date.now();
+            Date.now();
 
         }
 
 
-        const closedFor =
-            Date.now() -
-            eyesClosedSince;
+        const closedTime =
+        Date.now() -
+        eyesClosedSince;
 
+
+        const seconds =
+        closedTime /
+        1000;
+
+
+        const eyeState =
+        document.getElementById(
+            "eyeState"
+        );
+
+
+        const drowsyState =
+        document.getElementById(
+            "drowsyState"
+        );
+
+
+        if(eyeState){
+
+            eyeState.textContent =
+            "EYES: CLOSED";
+
+        }
+
+
+        /*
+         * 2 SECOND WARNING
+         */
 
         if(
-            closedFor >=
-            EYES_CLOSED_TIME
+            closedTime >=
+            EYE_WARN_TIME &&
+            !drowsyWarningSent
         ){
 
-            setEyeStatus(
-                "DROWSY"
+            drowsyWarningSent =
+            true;
+
+
+            if(drowsyState){
+
+                drowsyState.textContent =
+                "DROWSINESS: WARNING";
+
+            }
+
+
+            if(cameraPanel){
+
+                cameraPanel.classList.add(
+                    "drowsy"
+                );
+
+            }
+
+
+            /*
+             * EXACT ESP32 COMMAND
+             */
+
+            sendCmd(
+                "EYE:WARN"
             );
 
 
-            if(!drowsySent){
+            console.log(
+                "EYE:WARN SENT"
+            );
 
-                drowsySent =
-                    true;
-
-
-                sendCmd(
-                    "DROWSY:1"
-                );
+        }
 
 
-                console.log(
-                    "DROWSINESS DETECTED"
-                );
+        /*
+         * Show countdown before warning.
+         */
+
+        if(
+            closedTime <
+            EYE_WARN_TIME
+        ){
+
+            if(drowsyState){
+
+                drowsyState.textContent =
+                "EYES CLOSED " +
+                seconds.toFixed(1) +
+                "s";
 
             }
 
         }
 
-        else{
 
-            setEyeStatus(
-                "EYES CLOSING"
+        /*
+         * 10 SECOND ALERT
+         */
+
+        if(
+            closedTime >=
+            EYE_ALERT_TIME &&
+            !drowsyAlertSent
+        ){
+
+            drowsyAlertSent =
+            true;
+
+
+            if(drowsyState){
+
+                drowsyState.textContent =
+                "DROWSINESS: ALERT";
+
+            }
+
+
+            if(cameraPanel){
+
+                cameraPanel.classList.add(
+                    "drowsy"
+                );
+
+            }
+
+
+            /*
+             * EXACT ESP32 COMMAND
+             */
+
+            sendCmd(
+                "EYE:ALERT"
+            );
+
+
+            console.log(
+                "EYE:ALERT SENT"
             );
 
         }
@@ -1558,28 +2291,75 @@ function processEyeResults(results){
 
     else{
 
+        /*
+         * Eyes are open.
+         */
+
         eyesClosedSince =
-            null;
+        0;
 
 
-        setEyeStatus(
-            "EYES OPEN"
+        const eyeState =
+        document.getElementById(
+            "eyeState"
         );
 
 
-        if(drowsySent){
+        const drowsyState =
+        document.getElementById(
+            "drowsyState"
+        );
 
-            drowsySent =
-                false;
+
+        if(eyeState){
+
+            eyeState.textContent =
+            "EYES: OPEN";
+
+        }
+
+
+        if(drowsyState){
+
+            drowsyState.textContent =
+            "DROWSINESS: NORMAL";
+
+        }
+
+
+        /*
+         * Tell ESP32 that driver is awake.
+         */
+
+        if(
+            drowsyWarningSent ||
+            drowsyAlertSent
+        ){
+
+            drowsyWarningSent =
+            false;
+
+
+            drowsyAlertSent =
+            false;
 
 
             sendCmd(
-                "DROWSY:0"
+                "EYE:CLEAR"
             );
 
 
             console.log(
-                "DRIVER AWAKE"
+                "EYE:CLEAR SENT"
+            );
+
+        }
+
+
+        if(cameraPanel){
+
+            cameraPanel.classList.remove(
+                "drowsy"
             );
 
         }
@@ -1590,154 +2370,54 @@ function processEyeResults(results){
 
 
 /* =========================================================
-   EYE STATUS DISPLAY
+   EYE STATUS
 ========================================================= */
 
-function setEyeStatus(state){
+function setEyeStatus(
+    state
+){
 
     const eyeState =
-        document.getElementById(
-            "eyeState"
-        );
+    document.getElementById(
+        "eyeState"
+    );
 
 
     const drowsyState =
-        document.getElementById(
-            "drowsyState"
-        );
+    document.getElementById(
+        "drowsyState"
+    );
 
 
     if(eyeState){
 
         eyeState.textContent =
-            "EYES: " +
-            state;
+        "EYES: " +
+        state;
 
     }
 
 
     if(drowsyState){
 
-        if(state === "DROWSY"){
-
-            drowsyState.textContent =
-                "DROWSINESS: DETECTED";
-
-        }
-
-        else if(
-            state === "FACE NOT DETECTED"
+        if(
+            state ===
+            "FACE NOT DETECTED"
         ){
 
             drowsyState.textContent =
-                "FACE: NOT DETECTED";
+            "FACE: NOT DETECTED";
 
         }
 
         else{
 
             drowsyState.textContent =
-                "DROWSINESS: NORMAL";
+            "DROWSINESS: NORMAL";
 
         }
 
     }
-
-}
-
-
-/* =========================================================
-   START EYE DETECTION
-========================================================= */
-
-async function startEyeDetection(){
-
-    if(!setupEyeDetection()){
-
-        setEyeStatus(
-            "MODEL LOADING"
-        );
-
-        return;
-
-    }
-
-
-    if(eyeDetectionRunning)
-        return;
-
-
-    eyeDetectionRunning =
-        true;
-
-
-    async function processCameraFrame(){
-
-        if(!eyeDetectionRunning)
-            return;
-
-
-        if(
-            cameraStream &&
-            cameraVideo.readyState >= 2
-        ){
-
-            try{
-
-                await faceMesh.send({
-
-                    image:
-                        cameraVideo
-
-                });
-
-            }
-
-            catch(error){
-
-                console.warn(
-                    "Temporary face processing issue:",
-                    error.message
-                );
-
-            }
-
-        }
-
-
-        requestAnimationFrame(
-            processCameraFrame
-        );
-
-    }
-
-
-    processCameraFrame();
-
-}
-
-
-/* =========================================================
-   STOP EYE DETECTION
-========================================================= */
-
-function stopEyeDetection(){
-
-    eyeDetectionRunning =
-        false;
-
-
-    eyesClosedSince =
-        null;
-
-
-    drowsySent =
-        false;
-
-
-    setEyeStatus(
-        "CAMERA OFF"
-    );
 
 }
 
@@ -1745,6 +2425,16 @@ function stopEyeDetection(){
 /* =========================================================
    PAGE SAFETY
 ========================================================= */
+
+window.addEventListener(
+    "blur",
+    () => {
+
+        stopDrive();
+
+    }
+);
+
 
 window.addEventListener(
     "pagehide",
@@ -1763,10 +2453,28 @@ window.addEventListener(
 
 
 /* =========================================================
-   INITIALIZE
+   BROWSER CHECK
 ========================================================= */
 
-setupEyeDetection();
+if(!navigator.bluetooth){
+
+    console.warn(
+        "Web Bluetooth is unavailable."
+    );
+
+}
+
+
+if(
+    !navigator.mediaDevices ||
+    !navigator.mediaDevices.getUserMedia
+){
+
+    console.warn(
+        "Camera API is unavailable."
+    );
+
+}
 
 
 console.log(
