@@ -6,12 +6,21 @@
 <meta charset="UTF-8">
 
 <meta name="viewport"
-content="width=device-width,
-initial-scale=1.0,
-maximum-scale=1.0,
-user-scalable=no">
+      content="width=device-width,
+               initial-scale=1.0,
+               maximum-scale=1.0,
+               user-scalable=no,
+               viewport-fit=cover">
 
 <title>RC Car Controller</title>
+
+<!-- =====================================================
+     MEDIAPIPE
+===================================================== -->
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+
 
 <style>
 
@@ -23,7 +32,7 @@ user-scalable=no">
     box-sizing:border-box;
     user-select:none;
     -webkit-user-select:none;
-    touch-action:none;
+    -webkit-tap-highlight-color:transparent;
 }
 
 html,
@@ -31,9 +40,15 @@ body{
     margin:0;
     width:100%;
     height:100%;
+
     background:#000;
     color:#fff;
-    font-family:Arial,Helvetica,sans-serif;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
     overflow:hidden;
 }
 
@@ -42,44 +57,95 @@ input{
     font-family:inherit;
 }
 
+button{
+    cursor:pointer;
+}
+
 
 /* =====================================================
-   MAIN APP
+   APP
 ===================================================== */
 
 #app{
     position:relative;
+
     width:100%;
     height:100%;
+
     overflow:hidden;
 
     background:
-    radial-gradient(
-        ellipse at 50% 65%,
-        #102015 0%,
-        #050806 25%,
-        #000 70%
-    );
+        radial-gradient(
+            ellipse at 35% 65%,
+            #102015 0%,
+            #050806 35%,
+            #000 75%
+        );
 
-    transition:background .3s ease;
+    transition:
+        background .3s ease;
 }
 
 #app.sport{
     background:
-    radial-gradient(
-        ellipse at 50% 65%,
-        #25100d 0%,
-        #090303 30%,
-        #000 70%
-    );
+        radial-gradient(
+            ellipse at 35% 65%,
+            #25100d 0%,
+            #090303 35%,
+            #000 75%
+        );
 }
 
 
 /* =====================================================
-   TOP STATUS BAR
+   ROTATE MESSAGE
+===================================================== */
+
+#rotatePrompt{
+    display:none;
+
+    position:fixed;
+    inset:0;
+
+    background:#000;
+    color:#fff;
+
+    z-index:9999;
+
+    align-items:center;
+    justify-content:center;
+
+    flex-direction:column;
+
+    text-align:center;
+
+    font-size:14px;
+}
+
+#rotatePrompt .rotateIcon{
+    font-size:45px;
+    margin-bottom:15px;
+}
+
+@media (orientation:portrait){
+
+    #rotatePrompt{
+        display:flex;
+    }
+
+    #app{
+        display:none;
+    }
+
+}
+
+
+/* =====================================================
+   TOP STATUS
 ===================================================== */
 
 #infoBar{
+
     position:absolute;
 
     top:10px;
@@ -89,17 +155,16 @@ input{
 
     display:flex;
     align-items:center;
-    gap:25px;
 
-    padding:7px 22px;
+    gap:18px;
 
-    background:rgba(5,5,5,.82);
+    padding:7px 16px;
+
+    background:#080808e8;
 
     border:1px solid #292929;
-    border-radius:15px;
 
-    box-shadow:
-    0 0 20px rgba(0,0,0,.7);
+    border-radius:12px;
 
     z-index:50;
 
@@ -108,35 +173,43 @@ input{
     white-space:nowrap;
 }
 
-#infoBar .item{
+.infoItem{
+
     display:flex;
     align-items:center;
-    gap:6px;
+
+    gap:5px;
 
     color:#aaa;
 }
 
-#infoBar .dot{
-    width:9px;
-    height:9px;
+.dot{
+
+    width:8px;
+    height:8px;
 
     border-radius:50%;
 
     background:#444;
+
 }
 
-#infoBar .dot.ok{
-    background:#4CAF50;
+.dot.ok{
+
+    background:#4caf50;
 
     box-shadow:
-    0 0 8px #4CAF50;
+        0 0 8px #4caf50;
+
 }
 
-#infoBar .dot.bad{
+.dot.bad{
+
     background:#f44336;
 
     box-shadow:
-    0 0 8px #f44336;
+        0 0 8px #f44336;
+
 }
 
 
@@ -145,54 +218,64 @@ input{
 ===================================================== */
 
 #statusBox{
+
     position:absolute;
 
     top:10px;
     right:12px;
 
-    width:175px;
+    width:155px;
 
-    padding:9px;
+    padding:8px;
 
-    background:rgba(5,5,5,.88);
+    background:#080808ee;
 
     border:1px solid #292929;
-    border-radius:13px;
+
+    border-radius:11px;
 
     z-index:60;
 
-    box-shadow:
-    0 0 20px rgba(0,0,0,.7);
+    text-align:center;
 }
 
 #status{
-    font-size:10px;
 
-    color:#4CAF50;
+    font-size:9px;
 
-    margin-bottom:3px;
+    color:#aaa;
+
+    margin-bottom:5px;
+
+    white-space:nowrap;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
 }
 
 #connectBtn{
+
     width:100%;
 
     padding:7px;
 
     border:0;
 
-    border-radius:7px;
+    border-radius:6px;
 
     background:
-    linear-gradient(
-        #1684e8,
-        #0756a7
-    );
+        linear-gradient(
+            #1684e8,
+            #0756a7
+        );
 
     color:#fff;
 
     font-size:9px;
 
     font-weight:bold;
+
 }
 
 
@@ -201,27 +284,29 @@ input{
 ===================================================== */
 
 #distCircle{
+
     position:absolute;
 
     top:10px;
     left:12px;
 
-    width:110px;
-    height:110px;
+    width:105px;
+    height:105px;
 
     border-radius:50%;
 
     background:
-    radial-gradient(
-        circle,
-        #111 45%,
-        #070707 100%
-    );
+        radial-gradient(
+            circle,
+            #111 40%,
+            #050505 100%
+        );
 
     border:2px solid #245f38;
 
     box-shadow:
-    0 0 18px rgba(76,175,80,.15);
+        0 0 15px
+        rgba(76,175,80,.12);
 
     z-index:40;
 
@@ -229,50 +314,59 @@ input{
 
     flex-direction:column;
 
-    justify-content:center;
-
     align-items:center;
+
+    justify-content:center;
 }
 
 .distVal{
-    font-size:18px;
 
-    line-height:20px;
+    font-size:16px;
+
+    line-height:18px;
 
     font-weight:bold;
 }
 
 .distLabel{
-    font-size:7px;
 
     color:#777;
 
-    margin-bottom:3px;
+    font-size:6px;
+
+    letter-spacing:1px;
+
+    margin-bottom:2px;
 }
 
 #distFront{
-    color:#4CAF50;
 
-    text-shadow:
-    0 0 7px rgba(76,175,80,.5);
+    color:#4caf50;
+
 }
 
 #distRear{
+
     color:#29b6f6;
 
-    text-shadow:
-    0 0 7px rgba(41,182,246,.5);
+}
+
+.distanceDanger{
+
+    color:#f44336 !important;
+
 }
 
 
 /* =====================================================
-   GPS
+   GPS COORDINATES
 ===================================================== */
 
 #coords{
+
     position:absolute;
 
-    top:47px;
+    top:48px;
     left:50%;
 
     transform:translateX(-50%);
@@ -288,118 +382,11 @@ input{
 
 
 /* =====================================================
-   GPS / SMS BUTTONS
-===================================================== */
-
-#gpsReqBtn,
-#smsBtn{
-    position:absolute;
-
-    top:75px;
-
-    z-index:45;
-
-    border:1px solid #333;
-
-    background:#111;
-
-    color:#ddd;
-
-    border-radius:7px;
-
-    padding:6px 10px;
-
-    font-size:8px;
-}
-
-#gpsReqBtn{
-    left:135px;
-}
-
-#smsBtn{
-    left:12px;
-}
-
-
-/* =====================================================
-   SMS PANEL
-===================================================== */
-
-#msgPanel{
-    display:none;
-
-    position:absolute;
-
-    top:108px;
-    left:12px;
-
-    z-index:70;
-
-    width:245px;
-
-    padding:10px;
-
-    background:rgba(5,5,5,.95);
-
-    border:1px solid #333;
-
-    border-radius:12px;
-}
-
-#msgPanel.open{
-    display:block;
-}
-
-#msgInput{
-    width:100%;
-
-    padding:8px;
-
-    background:#111;
-
-    border:1px solid #444;
-
-    border-radius:7px;
-
-    color:#fff;
-
-    font-size:9px;
-}
-
-#msgSendBtn{
-    margin-top:6px;
-
-    width:100%;
-
-    padding:7px;
-
-    border:0;
-
-    border-radius:7px;
-
-    background:#4CAF50;
-
-    color:#fff;
-
-    font-size:9px;
-
-    font-weight:bold;
-}
-
-#msgStatus{
-    margin-top:5px;
-
-    font-size:7px;
-
-    color:#888;
-}
-
-
-/* =====================================================
    MODE
 ===================================================== */
 
 #modeToggle{
+
     position:absolute;
 
     top:78px;
@@ -409,7 +396,7 @@ input{
 
     display:flex;
 
-    gap:5px;
+    gap:4px;
 
     padding:4px;
 
@@ -417,43 +404,160 @@ input{
 
     border:1px solid #333;
 
-    border-radius:10px;
+    border-radius:9px;
 
     z-index:50;
 }
 
 .modeBtn{
-    padding:7px 18px;
+
+    padding:6px 16px;
 
     border:0;
 
-    border-radius:7px;
+    border-radius:6px;
 
     background:#1a1a1a;
 
     color:#777;
 
-    font-size:9px;
+    font-size:8px;
 
     font-weight:bold;
 }
 
 #ecoBtn.active{
+
     background:#218b32;
 
     color:#fff;
 
-    box-shadow:
-    0 0 10px rgba(76,175,80,.35);
 }
 
 #sportBtn.active{
+
     background:#b51e1e;
 
     color:#fff;
 
-    box-shadow:
-    0 0 10px rgba(244,67,54,.35);
+}
+
+
+/* =====================================================
+   GPS / SMS
+===================================================== */
+
+#utilityButtons{
+
+    position:absolute;
+
+    left:12px;
+    top:123px;
+
+    display:flex;
+
+    gap:5px;
+
+    z-index:50;
+}
+
+.utilityBtn{
+
+    padding:6px 9px;
+
+    background:#111;
+
+    border:1px solid #333;
+
+    border-radius:6px;
+
+    color:#aaa;
+
+    font-size:7px;
+}
+
+
+/* =====================================================
+   SMS PANEL
+===================================================== */
+
+#msgPanel{
+
+    display:none;
+
+    position:absolute;
+
+    left:12px;
+    top:158px;
+
+    width:220px;
+
+    padding:9px;
+
+    background:#080808f5;
+
+    border:1px solid #333;
+
+    border-radius:9px;
+
+    z-index:80;
+}
+
+#msgPanel.open{
+
+    display:block;
+
+}
+
+#msgInput{
+
+    width:100%;
+
+    padding:8px;
+
+    background:#111;
+
+    border:1px solid #444;
+
+    border-radius:6px;
+
+    color:#fff;
+
+    font-size:8px;
+
+    outline:none;
+}
+
+#msgSendBtn{
+
+    width:100%;
+
+    margin-top:6px;
+
+    padding:7px;
+
+    border:0;
+
+    border-radius:6px;
+
+    background:#4caf50;
+
+    color:#fff;
+
+    font-size:8px;
+
+    font-weight:bold;
+}
+
+#msgStatus{
+
+    display:block;
+
+    margin-top:5px;
+
+    color:#777;
+
+    font-size:7px;
 }
 
 
@@ -462,45 +566,49 @@ input{
 ===================================================== */
 
 #gaugeRow{
+
     position:absolute;
 
-    top:41%;
-    left:38%;
+    left:34%;
+
+    top:45%;
 
     transform:
-    translate(-50%,-50%);
+        translate(-50%,-50%);
 
     display:flex;
 
-    gap:15px;
+    gap:10px;
 
-    z-index:15;
+    z-index:10;
 }
 
-.gauge{
+.gaugeWrap{
+
     position:relative;
 
-    width:135px;
-    height:135px;
+    width:105px;
+    height:105px;
 
     border-radius:50%;
 
     background:
-    radial-gradient(
-        circle,
-        #111 45%,
-        #050505 70%,
-        #000 100%
-    );
+        radial-gradient(
+            circle,
+            #121212 40%,
+            #050505 75%,
+            #000 100%
+        );
 
-    border:5px solid #252525;
+    border:3px solid #292929;
 
     box-shadow:
-    inset 0 0 15px #000,
-    0 0 15px rgba(0,0,0,.8);
+        inset 0 0 12px #000,
+        0 0 12px rgba(0,0,0,.7);
 }
 
-.gauge:before{
+.gaugeWrap::before{
+
     content:"";
 
     position:absolute;
@@ -509,12 +617,28 @@ input{
 
     border-radius:50%;
 
-    border:2px solid #333;
-
-    opacity:.7;
+    border:1px solid #333;
 }
 
 .gaugeTitle{
+
+    position:absolute;
+
+    top:22px;
+
+    width:100%;
+
+    text-align:center;
+
+    color:#777;
+
+    font-size:7px;
+
+    letter-spacing:1px;
+}
+
+.gaugeNum{
+
     position:absolute;
 
     top:38px;
@@ -523,31 +647,16 @@ input{
 
     text-align:center;
 
-    font-size:9px;
-
-    color:#888;
-
-    letter-spacing:1px;
-}
-
-.gaugeNumber{
-    position:absolute;
-
-    top:54px;
-
-    width:100%;
-
-    text-align:center;
-
-    font-size:28px;
+    font-size:21px;
 
     font-weight:bold;
 }
 
 .gaugeUnit{
+
     position:absolute;
 
-    top:91px;
+    top:67px;
 
     width:100%;
 
@@ -555,489 +664,9 @@ input{
 
     color:#777;
 
-    font-size:8px;
-}
+    font-size:6px;
 
-
-/* =====================================================
-   3D CAR
-===================================================== */
-
-#carScene{
-    position:absolute;
-
-    left:52%;
-    top:67%;
-
-    width:290px;
-    height:290px;
-
-    transform:
-    translate(-50%,-50%);
-
-    perspective:900px;
-
-    z-index:20;
-
-    pointer-events:none;
-}
-
-
-/* ground */
-
-#carGround{
-    position:absolute;
-
-    left:50%;
-    top:52%;
-
-    width:280px;
-    height:170px;
-
-    transform:
-    translate(-50%,-50%)
-    rotateX(62deg);
-
-    border-radius:50%;
-
-    background:
-    radial-gradient(
-        ellipse,
-        rgba(50,110,65,.32),
-        rgba(0,0,0,.8) 55%,
-        transparent 72%
-    );
-
-    filter:blur(2px);
-}
-
-
-/* shadow */
-
-#carShadow{
-    position:absolute;
-
-    left:50%;
-    top:52%;
-
-    width:180px;
-    height:245px;
-
-    transform:
-    translate(-50%,-50%)
-    rotateX(55deg);
-
-    border-radius:50%;
-
-    background:#000;
-
-    filter:blur(15px);
-
-    opacity:.8;
-}
-
-
-/* body */
-
-#carBody{
-    position:absolute;
-
-    left:50%;
-    top:50%;
-
-    width:145px;
-    height:235px;
-
-    transform:
-    translate(-50%,-50%)
-    rotateX(3deg);
-
-    border-radius:
-    48px 48px 38px 38px;
-
-    background:
-    linear-gradient(
-        90deg,
-        #101010 0%,
-        #555 12%,
-        #242424 25%,
-        #080808 48%,
-        #5c5c5c 72%,
-        #111 100%
-    );
-
-    border:2px solid #777;
-
-    box-shadow:
-    inset 15px 0 18px
-    rgba(255,255,255,.08),
-
-    inset -15px 0 18px
-    rgba(0,0,0,.7),
-
-    0 20px 35px #000;
-}
-
-
-/* roof */
-
-#carRoof{
-    position:absolute;
-
-    left:50%;
-    top:47px;
-
-    width:104px;
-    height:112px;
-
-    transform:translateX(-50%);
-
-    border-radius:
-    38px 38px 24px 24px;
-
-    background:
-    linear-gradient(
-        90deg,
-        #151515,
-        #4d4d4d,
-        #111,
-        #555,
-        #111
-    );
-
-    border:2px solid #444;
-
-    box-shadow:
-    inset 0 5px 8px
-    rgba(255,255,255,.08);
-}
-
-
-/* windshield */
-
-#windshield{
-    position:absolute;
-
-    left:50%;
-    top:58px;
-
-    width:82px;
-    height:54px;
-
-    transform:translateX(-50%);
-
-    border-radius:
-    28px 28px 8px 8px;
-
-    background:
-    linear-gradient(
-        145deg,
-        #6b818a,
-        #1d3038 35%,
-        #050a0d 100%
-    );
-
-    border:2px solid #526168;
-
-    box-shadow:
-    inset 0 6px 9px
-    rgba(255,255,255,.12);
-}
-
-
-/* rear window */
-
-#rearWindow{
-    position:absolute;
-
-    left:50%;
-    bottom:50px;
-
-    width:76px;
-    height:45px;
-
-    transform:translateX(-50%);
-
-    border-radius:
-    9px 9px 25px 25px;
-
-    background:
-    linear-gradient(
-        145deg,
-        #3a4b51,
-        #0b1114
-    );
-
-    border:2px solid #3b4447;
-}
-
-
-/* headlights */
-
-.headlight{
-    position:absolute;
-
-    top:17px;
-
-    width:29px;
-    height:10px;
-
-    border-radius:8px;
-
-    background:#eaffff;
-
-    box-shadow:
-    0 0 12px #d5f8ff,
-    0 0 25px rgba(150,220,255,.7);
-}
-
-#headlightLeft{
-    left:25px;
-}
-
-#headlightRight{
-    right:25px;
-}
-
-
-/* rear lights */
-
-.rearlight{
-    position:absolute;
-
-    bottom:17px;
-
-    width:31px;
-    height:11px;
-
-    border-radius:8px;
-
-    background:#550808;
-
-    box-shadow:
-    inset 0 0 5px #000;
-
-    transition:
-    background .15s,
-    box-shadow .15s;
-}
-
-#rearLightLeft{
-    left:22px;
-}
-
-#rearLightRight{
-    right:22px;
-}
-
-
-/* =====================================================
-   CAR WHEELS
-===================================================== */
-
-.wheel3d{
-    position:absolute;
-
-    width:27px;
-    height:66px;
-
-    border-radius:10px;
-
-    background:
-    linear-gradient(
-        90deg,
-        #020202,
-        #303030,
-        #777,
-        #111,
-        #020202
-    );
-
-    border:2px solid #050505;
-
-    box-shadow:
-    0 5px 7px #000;
-
-    transition:
-    transform .12s ease;
-}
-
-#wheelFL{
-    left:-15px;
-    top:43px;
-}
-
-#wheelFR{
-    right:-15px;
-    top:43px;
-}
-
-#wheelRL{
-    left:-15px;
-    bottom:42px;
-}
-
-#wheelRR{
-    right:-15px;
-    bottom:42px;
-}
-
-.wheel3d:after{
-    content:"";
-
-    position:absolute;
-
-    left:50%;
-    top:50%;
-
-    width:9px;
-    height:9px;
-
-    transform:
-    translate(-50%,-50%);
-
-    border-radius:50%;
-
-    background:#777;
-
-    border:2px solid #222;
-}
-
-
-/* =====================================================
-   SENSOR ZONES
-===================================================== */
-
-.sensorZone{
-    position:absolute;
-
-    left:50%;
-
-    width:110px;
-    height:70px;
-
-    transform:translateX(-50%);
-
-    border-radius:50%;
-
-    pointer-events:none;
-
-    transition:
-    all .3s ease;
-}
-
-#frontSensor{
-    top:-5px;
-
-    background:
-    radial-gradient(
-        ellipse,
-        rgba(76,175,80,.30),
-        transparent 70%
-    );
-}
-
-#rearSensor{
-    bottom:-5px;
-
-    background:
-    radial-gradient(
-        ellipse,
-        rgba(41,182,246,.25),
-        transparent 70%
-    );
-}
-
-
-/* warning */
-
-#carScene.warning #carBody{
-    filter:
-    drop-shadow(
-        0 0 15px
-        rgba(255,0,0,.75)
-    );
-}
-
-#carScene.warning .sensorZone{
-    background:
-    radial-gradient(
-        ellipse,
-        rgba(244,67,54,.48),
-        transparent 70%
-    );
-}
-
-#carScene.warning #carLabel{
-    color:#f44336;
-}
-
-
-/* direction */
-
-#carDirection{
-    position:absolute;
-
-    left:50%;
-    top:-23px;
-
-    transform:translateX(-50%);
-
-    color:#aaa;
-
-    font-size:18px;
-}
-
-
-/* label */
-
-#carLabel{
-    position:absolute;
-
-    left:50%;
-    bottom:-30px;
-
-    transform:translateX(-50%);
-
-    color:#777;
-
-    font-size:9px;
-
-    letter-spacing:3px;
-
-    white-space:nowrap;
-}
-
-
-/* movement */
-
-#carScene.moving #carBody{
-    animation:
-    carBounce .3s infinite;
-}
-
-@keyframes carBounce{
-
-    0%{
-        transform:
-        translate(-50%,-50%)
-        translateY(0)
-        rotateX(3deg);
-    }
-
-    50%{
-        transform:
-        translate(-50%,-50%)
-        translateY(-4px)
-        rotateX(3deg);
-    }
-
-    100%{
-        transform:
-        translate(-50%,-50%)
-        translateY(0)
-        rotateX(3deg);
-    }
+    letter-spacing:1px;
 }
 
 
@@ -1046,39 +675,44 @@ input{
 ===================================================== */
 
 #cameraPanel{
+
     position:absolute;
 
-    right:12px;
+    right:165px;
+
     top:50%;
 
     transform:translateY(-50%);
 
-    width:235px;
+    width:190px;
 
     padding:8px;
 
-    background:
-    rgba(5,5,5,.9);
+    background:#080808ed;
 
     border:1px solid #333;
 
-    border-radius:14px;
+    border-radius:11px;
 
     z-index:40;
 
-    box-shadow:
-    0 0 20px rgba(0,0,0,.7);
+    text-align:center;
+
+    transition:
+        border-color .2s,
+        box-shadow .2s;
 }
 
 #driverCamera{
+
     display:block;
 
     width:100%;
-    height:155px;
+    height:125px;
 
     object-fit:cover;
 
-    border-radius:9px;
+    border-radius:8px;
 
     background:#111;
 
@@ -1086,18 +720,60 @@ input{
 }
 
 #cameraState,
-#eyeState,
-#drowsyState{
+#eyeState{
+
     margin-top:4px;
+
+    color:#777;
 
     font-size:8px;
 
-    color:#999;
 }
 
-#cameraBtn,
-#switchCamera{
-    width:48%;
+#drowsyState{
+
+    margin-top:5px;
+
+    padding:5px;
+
+    border-radius:5px;
+
+    background:#09200e;
+
+    color:#4caf50;
+
+    font-size:9px;
+
+    font-weight:bold;
+
+    transition:
+        color .2s,
+        background .2s,
+        border .2s;
+}
+
+#cameraPanel.drowsy{
+
+    border-color:#f44336;
+
+    box-shadow:
+        0 0 15px
+        rgba(244,67,54,.3);
+}
+
+#cameraPanel.drowsy #drowsyState{
+
+    color:#f44336;
+
+    background:#300707;
+
+    border:1px solid #f44336;
+
+}
+
+#cameraBtn{
+
+    width:100%;
 
     margin-top:6px;
 
@@ -1105,407 +781,189 @@ input{
 
     border:0;
 
-    border-radius:7px;
+    border-radius:6px;
 
     background:#1684e8;
 
     color:#fff;
 
     font-size:8px;
-}
-
-#switchCamera{
-    background:#333;
-}
-
-
-/* =====================================================
-   PEDALS
-===================================================== */
-
-#pedalStack{
-    position:absolute;
-
-    right:12px;
-    top:68%;
-
-    transform:translateY(-50%);
-
-    display:flex;
-
-    flex-direction:column;
-
-    gap:15px;
-
-    z-index:50;
-}
-
-.pedal{
-    width:72px;
-    height:105px;
-
-    display:flex;
-
-    justify-content:center;
-
-    align-items:center;
-
-    text-align:center;
-
-    flex-direction:column;
-
-    border-radius:13px;
-
-    background:
-    linear-gradient(
-        #bcbcbc,
-        #515151
-    );
-
-    color:#111;
-
-    border:3px solid #4CAF50;
-
-    box-shadow:
-    0 0 15px
-    rgba(76,175,80,.35);
-
-    font-size:11px;
 
     font-weight:bold;
-
-    transition:.15s ease;
-}
-
-#app.sport .pedal{
-    border-color:#f44336;
-
-    box-shadow:
-    0 0 15px
-    rgba(244,67,54,.35);
-}
-
-.pedal.active{
-    transform:scale(.96);
-}
-
-#app:not(.sport) .pedal.active{
-    background:#4CAF50;
-    color:#fff;
-}
-
-#app.sport .pedal.active{
-    background:#f44336;
-    color:#fff;
 }
 
 
 /* =====================================================
-   ROUND BMW-STYLE STEERING
+   LEFT STEERING
 ===================================================== */
 
-#wheelWrap{
+#steeringButtons{
+
     position:absolute;
 
-    left:18px;
-    bottom:15px;
+    left:15px;
 
-    width:220px;
-    height:220px;
+    bottom:25px;
+
+    display:flex;
+
+    gap:9px;
 
     z-index:60;
-
-    display:flex;
-
-    justify-content:center;
-
-    align-items:center;
 }
 
+.steerBtn{
 
-/* wheel */
+    width:68px;
+    height:68px;
 
-#wheel{
-    position:relative;
-
-    width:200px;
-    height:200px;
-
-    border-radius:50%;
+    border-radius:12px;
 
     background:
-    radial-gradient(
-        circle,
-        transparent 0%,
-        transparent 55%,
-        #080808 56%,
-        #111 64%,
-        #030303 70%,
-        #181818 72%,
-        #050505 100%
-    );
+        linear-gradient(
+            #3a3a3a,
+            #202020
+        );
 
-    border:15px solid #171717;
+    border:2px solid #29b6f6;
 
-    box-shadow:
-    inset 0 0 0 3px #444,
-    inset 0 0 12px #000,
-    0 10px 25px rgba(0,0,0,.9);
-
-    transform:rotate(0deg);
-
-    transition:
-    box-shadow .15s ease;
-
-    touch-action:none;
-}
-
-
-/* outer rim */
-
-#wheel:before{
-    content:"";
-
-    position:absolute;
-
-    inset:-9px;
-
-    border-radius:50%;
-
-    border:2px solid #555;
-
-    opacity:.8;
-}
-
-
-/* =====================================================
-   STEERING SPOKES
-===================================================== */
-
-.steeringSpoke{
-    position:absolute;
-
-    left:50%;
-    top:50%;
-
-    background:
-    linear-gradient(
-        90deg,
-        #111,
-        #555,
-        #222
-    );
-
-    border-radius:8px;
-
-    z-index:3;
-}
-
-#spokeLeft{
-    width:75px;
-    height:15px;
-
-    transform:
-    translate(-100%,-50%)
-    rotate(-20deg);
-
-    margin-left:8px;
-}
-
-#spokeRight{
-    width:75px;
-    height:15px;
-
-    transform:
-    translate(0,-50%)
-    rotate(20deg);
-
-    margin-left:-8px;
-}
-
-#spokeBottom{
-    width:17px;
-    height:75px;
-
-    transform:
-    translate(-50%,0);
-
-    margin-top:-2px;
-}
-
-
-/* =====================================================
-   HUB
-===================================================== */
-
-#hub{
-    position:absolute;
-
-    left:50%;
-    top:50%;
-
-    width:76px;
-    height:76px;
-
-    transform:
-    translate(-50%,-50%);
-
-    border-radius:50%;
-
-    background:
-    radial-gradient(
-        circle,
-        #343434,
-        #121212 60%,
-        #050505 100%
-    );
-
-    border:4px solid #777;
-
-    box-shadow:
-    inset 0 0 10px #000;
-
-    z-index:8;
-}
-
-
-/* center emblem */
-
-#hub:after{
-    content:"";
-
-    position:absolute;
-
-    left:50%;
-    top:50%;
-
-    width:30px;
-    height:30px;
-
-    transform:
-    translate(-50%,-50%);
-
-    border-radius:50%;
-
-    border:2px solid #aaa;
-
-    box-shadow:
-    inset 0 0 5px #000;
-}
-
-
-/* M mark */
-
-#hub:before{
-    content:"M";
-
-    position:absolute;
-
-    left:50%;
-    top:50%;
-
-    transform:
-    translate(-50%,-50%);
-
-    color:#ddd;
-
-    font-size:15px;
-
-    font-weight:bold;
-
-    z-index:2;
-}
-
-
-/* steering marker */
-
-#steeringMarker{
-    position:absolute;
-
-    left:50%;
-    top:-4px;
-
-    transform:
-    translateX(-50%);
-
-    width:6px;
-    height:19px;
-
-    border-radius:3px;
-
-    background:#e53935;
-
-    box-shadow:
-    0 0 8px rgba(229,57,53,.6);
-
-    z-index:10;
-}
-
-
-/* steering angle */
-
-#steeringValue{
-    position:absolute;
-
-    left:50%;
-    bottom:-20px;
-
-    transform:
-    translateX(-50%);
+    color:#fff;
 
     font-size:9px;
 
-    color:#aaa;
+    font-weight:bold;
 
-    letter-spacing:2px;
-
-    white-space:nowrap;
+    transition:
+        transform .08s,
+        background .08s;
 }
 
+.steerBtn:active{
 
-/* steering scale */
+    transform:scale(.94);
 
-#steeringScale{
-    position:absolute;
+    background:#29b6f6;
 
-    left:50%;
-    bottom:-4px;
-
-    transform:
-    translateX(-50%);
-
-    width:190px;
-    height:25px;
-
-    border-top:
-    1px solid #555;
-
-    z-index:2;
-}
-
-#steeringScale:before{
-    content:
-    "−90°          0°          +90°";
-
-    position:absolute;
-
-    left:0;
-    top:5px;
-
-    width:100%;
-
-    text-align:center;
-
-    font-size:7px;
-
-    color:#777;
-
-    white-space:pre;
+    color:#000;
 }
 
 
 /* =====================================================
-   DROWSINESS FULL SCREEN WARNING
+   RIGHT F / B
+===================================================== */
+
+#driveButtons{
+
+    position:absolute;
+
+    right:15px;
+
+    bottom:25px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:10px;
+
+    z-index:60;
+}
+
+.driveBtn{
+
+    width:68px;
+    height:78px;
+
+    border-radius:12px;
+
+    background:
+        linear-gradient(
+            #555,
+            #292929
+        );
+
+    border:2px solid #4caf50;
+
+    color:#fff;
+
+    font-size:9px;
+
+    font-weight:bold;
+
+    transition:
+        transform .08s,
+        background .08s;
+}
+
+#app.sport .driveBtn{
+
+    border-color:#f44336;
+
+}
+
+.driveBtn:active{
+
+    transform:scale(.94);
+
+}
+
+#app:not(.sport)
+.driveBtn.active{
+
+    background:#218b32;
+
+}
+
+#app.sport
+.driveBtn.active{
+
+    background:#b51e1e;
+
+}
+
+
+/* =====================================================
+   OBSTACLE WARNING
+===================================================== */
+
+#obstacleWarning{
+
+    position:absolute;
+
+    left:50%;
+
+    bottom:12px;
+
+    transform:translateX(-50%);
+
+    display:none;
+
+    padding:6px 13px;
+
+    background:#300707;
+
+    border:1px solid #f44336;
+
+    border-radius:7px;
+
+    color:#f44336;
+
+    font-size:8px;
+
+    font-weight:bold;
+
+    z-index:90;
+}
+
+#obstacleWarning.active{
+
+    display:block;
+
+}
+
+
+/* =====================================================
+   DROWSINESS OVERLAY
 ===================================================== */
 
 #drowsyWarning{
@@ -1514,8 +972,6 @@ input{
 
     inset:0;
 
-    z-index:95;
-
     display:none;
 
     align-items:center;
@@ -1524,194 +980,64 @@ input{
 
     flex-direction:column;
 
-    pointer-events:none;
-
     background:
-    radial-gradient(
-        ellipse at center,
-        transparent 25%,
-        rgba(255,0,0,.035) 50%,
-        rgba(255,0,0,.22) 100%
-    );
+        rgba(255,0,0,.08);
 
     border:
-    6px solid rgba(255,0,0,.25);
+        5px solid
+        rgba(244,67,54,.6);
 
-    animation:
-    drowsyPulse 1.8s ease-in-out infinite;
+    z-index:200;
+
+    pointer-events:none;
 }
 
 #drowsyWarning.active{
+
     display:flex;
-}
-
-
-/* slow red page pulse */
-
-@keyframes drowsyPulse{
-
-    0%{
-
-        border-color:
-        rgba(255,0,0,.18);
-
-        box-shadow:
-        inset 0 0 25px
-        rgba(255,0,0,.08);
-    }
-
-    50%{
-
-        border-color:
-        rgba(255,0,0,.78);
-
-        box-shadow:
-        inset 0 0 90px
-        rgba(255,0,0,.32);
-    }
-
-    100%{
-
-        border-color:
-        rgba(255,0,0,.18);
-
-        box-shadow:
-        inset 0 0 25px
-        rgba(255,0,0,.08);
-    }
-}
-
-
-/* warning icon */
-
-#drowsyWarningIcon{
-
-    font-size:60px;
-
-    margin-bottom:8px;
-
-    filter:
-    drop-shadow(
-        0 0 14px
-        rgba(255,0,0,.9)
-    );
 
     animation:
-        warningIconPulse 1.8s ease-in-out infinite;
+        warningPulse 1.5s infinite;
 }
-
-@keyframes warningIconPulse{
-
-    0%,
-    100%{
-
-        transform:
-        scale(.92);
-
-        opacity:.65;
-    }
-
-    50%{
-
-        transform:
-        scale(1.08);
-
-        opacity:1;
-    }
-
-}
-
-
-/* warning title */
 
 #drowsyWarningText{
 
-    font-size:18px;
+    color:#f44336;
+
+    font-size:25px;
 
     font-weight:bold;
 
-    letter-spacing:2px;
-
-    color:#ff3333;
-
     text-shadow:
-    0 0 12px
-    rgba(255,0,0,.9);
+        0 0 15px red;
 }
-
-
-/* warning subtitle */
 
 #drowsyWarningSub{
 
     margin-top:7px;
 
-    font-size:9px;
+    color:#fff;
 
-    letter-spacing:1px;
-
-    color:#ffaaaa;
+    font-size:10px;
 }
 
+@keyframes warningPulse{
 
-/* =====================================================
-   COLLISION
-===================================================== */
-
-#collisionOverlay{
-
-    display:none;
-
-    position:absolute;
-
-    inset:0;
-
-    background:
-    rgba(255,0,0,.13);
-
-    z-index:100;
-
-    pointer-events:none;
-}
-
-#collisionOverlay.active{
-
-    display:block;
-
-    animation:
-    collisionFlash .5s infinite;
-}
-
-@keyframes collisionFlash{
-
-    50%{
-
-        background:
-        rgba(255,0,0,.03);
+    0%{
+        border-color:
+            rgba(244,67,54,.25);
     }
 
-}
+    50%{
+        border-color:
+            rgba(244,67,54,.9);
+    }
 
-#collisionIcon{
+    100%{
+        border-color:
+            rgba(244,67,54,.25);
+    }
 
-    display:none;
-
-    position:absolute;
-
-    left:50%;
-    top:63%;
-
-    transform:
-    translate(-50%,-50%);
-
-    font-size:55px;
-
-    z-index:110;
-}
-
-#collisionIcon.active{
-
-    display:block;
 }
 
 
@@ -1719,352 +1045,157 @@ input{
    MOBILE
 ===================================================== */
 
-@media(max-width:700px){
+@media(max-width:850px){
 
     #infoBar{
 
-        gap:10px;
+        gap:8px;
 
-        padding:
-        6px 10px;
+        padding:6px 10px;
 
         font-size:7px;
     }
 
-
     #statusBox{
 
         width:125px;
+
     }
-
-
-    #status{
-
-        font-size:8px;
-    }
-
-
-    #connectBtn{
-
-        font-size:8px;
-    }
-
 
     #distCircle{
 
-        width:82px;
-        height:82px;
-    }
+        width:90px;
+        height:90px;
 
+    }
 
     .distVal{
 
-        font-size:13px;
+        font-size:14px;
+
     }
-
-
-    .distLabel{
-
-        font-size:5px;
-    }
-
 
     #gaugeRow{
 
-        left:36%;
+        left:30%;
 
-        top:39%;
+        top:43%;
 
-        transform:
-        translate(-50%,-50%)
-        scale(.67);
-
-        gap:3px;
     }
 
+    .gaugeWrap{
 
-    #carScene{
+        width:82px;
+        height:82px;
 
-        left:43%;
-
-        top:69%;
-
-        transform:
-        translate(-50%,-50%)
-        scale(.62);
     }
 
+    .gaugeTitle{
+
+        top:17px;
+
+        font-size:6px;
+
+    }
+
+    .gaugeNum{
+
+        top:29px;
+
+        font-size:17px;
+
+    }
+
+    .gaugeUnit{
+
+        top:52px;
+
+        font-size:5px;
+
+    }
 
     #cameraPanel{
 
-        right:7px;
+        right:92px;
 
-        width:180px;
+        width:165px;
+
     }
-
 
     #driverCamera{
 
-        height:120px;
+        height:105px;
+
     }
 
+    .steerBtn{
 
-    #pedalStack{
+        width:58px;
+        height:58px;
 
-        right:6px;
-
-        gap:8px;
     }
 
+    .driveBtn{
 
-    .pedal{
+        width:58px;
+        height:70px;
 
-        width:52px;
-
-        height:76px;
-
-        font-size:8px;
-    }
-
-
-    #wheelWrap{
-
-        left:3px;
-
-        bottom:5px;
-
-        width:135px;
-
-        height:135px;
-    }
-
-
-    #wheel{
-
-        width:125px;
-
-        height:125px;
-
-        border-width:11px;
-    }
-
-
-    #hub{
-
-        width:48px;
-
-        height:48px;
-    }
-
-
-    #steeringScale{
-
-        width:125px;
-    }
-
-
-    #steeringValue{
-
-        font-size:6px;
     }
 
 }
 
 
 /* =====================================================
-   SMALL PHONE
+   VERY SMALL
 ===================================================== */
 
-@media(max-width:500px){
-
-    #infoBar{
-
-        top:5px;
-
-        transform:
-        translateX(-50%)
-        scale(.85);
-    }
-
-
-    #statusBox{
-
-        top:5px;
-
-        right:5px;
-
-        width:110px;
-
-        padding:6px;
-    }
-
-
-    #distCircle{
-
-        top:5px;
-
-        left:5px;
-
-        width:70px;
-
-        height:70px;
-    }
-
-
-    #coords{
-
-        top:29px;
-
-        font-size:6px;
-    }
-
-
-    #gpsReqBtn,
-    #smsBtn{
-
-        top:51px;
-
-        padding:4px 6px;
-
-        font-size:6px;
-    }
-
-
-    #gpsReqBtn{
-
-        left:82px;
-    }
-
-
-    #modeToggle{
-
-        top:55px;
-
-        transform:
-        translateX(-50%)
-        scale(.8);
-    }
-
-
-    #gaugeRow{
-
-        left:34%;
-
-        top:36%;
-
-        transform:
-        translate(-50%,-50%)
-        scale(.53);
-    }
-
-
-    #carScene{
-
-        left:43%;
-
-        top:68%;
-
-        transform:
-        translate(-50%,-50%)
-        scale(.48);
-    }
-
+@media(max-width:650px){
 
     #cameraPanel{
 
-        right:4px;
+        right:80px;
 
-        width:150px;
+        width:145px;
 
-        padding:5px;
     }
-
 
     #driverCamera{
 
-        height:100px;
+        height:90px;
+
     }
 
+    #gaugeRow{
 
-    #pedalStack{
+        left:27%;
 
-        right:4px;
     }
 
+    .gaugeWrap{
 
-    .pedal{
+        width:72px;
+        height:72px;
 
-        width:43px;
-
-        height:65px;
-
-        font-size:7px;
     }
 
+    .gaugeTitle{
 
-    #wheelWrap{
+        top:15px;
 
-        left:1px;
-
-        bottom:3px;
-
-        width:115px;
-
-        height:115px;
     }
 
+    .gaugeNum{
 
-    #wheel{
+        top:26px;
 
-        width:105px;
+        font-size:15px;
 
-        height:105px;
-
-        border-width:9px;
     }
 
+    .gaugeUnit{
 
-    #hub{
+        top:46px;
 
-        width:40px;
-
-        height:40px;
-    }
-
-
-    #steeringScale{
-
-        width:105px;
-    }
-
-
-    #steeringValue{
-
-        bottom:-17px;
-
-        font-size:5px;
-    }
-
-
-    /* DROWSINESS WARNING */
-
-    #drowsyWarningIcon{
-
-        font-size:45px;
-    }
-
-
-    #drowsyWarningText{
-
-        font-size:13px;
-
-        letter-spacing:1px;
-    }
-
-
-    #drowsyWarningSub{
-
-        font-size:7px;
     }
 
 }
@@ -2076,1097 +1207,2856 @@ input{
 
 <body>
 
+
+<!-- =====================================================
+     ROTATE PROMPT
+===================================================== -->
+
+<div id="rotatePrompt">
+
+    <div class="rotateIcon">
+        &#8635;
+    </div>
+
+    <div>
+        Please rotate your phone to landscape
+        <br>
+        to control the car
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     APP
+===================================================== -->
+
 <div id="app">
 
 
-<!-- =====================================================
-     DISTANCE
-===================================================== -->
+    <!-- =================================================
+         TOP STATUS
+    ================================================== -->
 
-<div id="distCircle">
+    <div id="infoBar">
 
-    <div class="distVal">
+        <div class="infoItem">
 
-        <span id="distFront">
-            --
+            <span
+                id="bleDot"
+                class="dot">
+            </span>
+
+            BLE
+
+        </div>
+
+        <div class="infoItem">
+
+            <span
+                id="gpsDot"
+                class="dot">
+            </span>
+
+            GPS
+
+        </div>
+
+        <div class="infoItem">
+
+            <span
+                id="gsmDot"
+                class="dot">
+            </span>
+
+            GSM
+
+        </div>
+
+        <div class="infoItem">
+
+            <span
+                id="smsDot"
+                class="dot">
+            </span>
+
+            SMS
+
+        </div>
+
+    </div>
+
+
+    <!-- =================================================
+         CONNECTION
+    ================================================== -->
+
+    <div id="statusBox">
+
+        <div id="status">
+            Not connected
+        </div>
+
+        <button id="connectBtn">
+            CONNECT TO CAR
+        </button>
+
+    </div>
+
+
+    <!-- =================================================
+         DISTANCE
+    ================================================== -->
+
+    <div id="distCircle">
+
+        <div class="distVal">
+
+            <span id="distFront">
+                --
+            </span>
+
+        </div>
+
+        <div class="distLabel">
+            FRONT CM
+        </div>
+
+
+        <div class="distVal">
+
+            <span id="distRear">
+                --
+            </span>
+
+        </div>
+
+        <div class="distLabel">
+            REAR CM
+        </div>
+
+    </div>
+
+
+    <!-- =================================================
+         GPS COORDINATES
+    ================================================== -->
+
+    <div id="coords">
+        -- , --
+    </div>
+
+
+    <!-- =================================================
+         MODE
+    ================================================== -->
+
+    <div id="modeToggle">
+
+        <button
+            id="ecoBtn"
+            class="modeBtn active">
+
+            ECO
+
+        </button>
+
+        <button
+            id="sportBtn"
+            class="modeBtn">
+
+            SPORT
+
+        </button>
+
+    </div>
+
+
+    <!-- =================================================
+         GPS / SMS BUTTONS
+    ================================================== -->
+
+    <div id="utilityButtons">
+
+        <button
+            id="gpsReqBtn"
+            class="utilityBtn">
+
+            GPS
+
+        </button>
+
+        <button
+            id="smsBtn"
+            class="utilityBtn">
+
+            SMS
+
+        </button>
+
+    </div>
+
+
+    <!-- =================================================
+         SMS PANEL
+    ================================================== -->
+
+    <div id="msgPanel">
+
+        <input
+            id="msgInput"
+            type="text"
+            maxlength="120"
+            placeholder="Type SMS message...">
+
+        <button id="msgSendBtn">
+            SEND SMS
+        </button>
+
+        <span id="msgStatus">
+            STATUS: READY
         </span>
 
     </div>
 
-    <div class="distLabel">
-        FRONT CM
-    </div>
 
-    <div class="distVal">
+    <!-- =================================================
+         SPEED + RPM
+    ================================================== -->
 
-        <span id="distRear">
-            --
-        </span>
+    <div id="gaugeRow">
 
-    </div>
 
-    <div class="distLabel">
-        REAR CM
-    </div>
+        <div class="gaugeWrap">
 
-</div>
+            <div class="gaugeTitle">
+                SPEED
+            </div>
 
+            <div
+                id="speedNum"
+                class="gaugeNum">
 
-<!-- =====================================================
-     TOP STATUS
-===================================================== -->
+                0
 
-<div id="infoBar">
+            </div>
 
-    <div class="item">
-
-        <span
-        class="dot"
-        id="gpsDot">
-        </span>
-
-        GPS
-
-    </div>
-
-
-    <div class="item">
-
-        <span
-        class="dot"
-        id="gsmDot">
-        </span>
-
-        GSM
-
-    </div>
-
-
-    <div class="item">
-
-        <span
-        class="dot"
-        id="smsDot">
-        </span>
-
-        SMS
-
-    </div>
-
-</div>
-
-
-<!-- =====================================================
-     CONNECTION
-===================================================== -->
-
-<div id="statusBox">
-
-    <div id="status">
-        Not connected
-    </div>
-
-    <button id="connectBtn">
-        CONNECT TO CAR
-    </button>
-
-</div>
-
-
-<!-- =====================================================
-     GPS
-===================================================== -->
-
-<div id="coords">
-    no GPS fix
-</div>
-
-
-<button id="gpsReqBtn">
-    GPS
-</button>
-
-
-<button id="smsBtn">
-    SMS
-</button>
-
-
-<!-- =====================================================
-     SMS
-===================================================== -->
-
-<div id="msgPanel">
-
-    <input
-    id="msgInput"
-    type="text"
-    placeholder="Enter message"
-    maxlength="120">
-
-
-    <button id="msgSendBtn">
-        SEND
-    </button>
-
-
-    <div id="msgStatus"></div>
-
-</div>
-
-
-<!-- =====================================================
-     MODE
-===================================================== -->
-
-<div id="modeToggle">
-
-    <button
-    class="modeBtn active"
-    id="ecoBtn">
-
-        ECO
-
-    </button>
-
-
-    <button
-    class="modeBtn"
-    id="sportBtn">
-
-        SPORT
-
-    </button>
-
-</div>
-
-
-<!-- =====================================================
-     SPEED / RPM
-===================================================== -->
-
-<div id="gaugeRow">
-
-
-    <div class="gauge">
-
-        <div class="gaugeTitle">
-            SPEED
-        </div>
-
-
-        <div
-        class="gaugeNumber"
-        id="speedNum">
-
-            0
+            <div class="gaugeUnit">
+                KM/H
+            </div>
 
         </div>
 
 
-        <div class="gaugeUnit">
-            KM/H
-        </div>
+        <div class="gaugeWrap">
 
-    </div>
+            <div class="gaugeTitle">
+                RPM
+            </div>
 
+            <div
+                id="rpmNum"
+                class="gaugeNum">
 
-    <div class="gauge">
+                0
 
-        <div class="gaugeTitle">
-            RPM
-        </div>
+            </div>
 
+            <div class="gaugeUnit">
+                RPM
+            </div>
 
-        <div
-        class="gaugeNumber"
-        id="rpmNum">
-
-            0
-
-        </div>
-
-
-        <div class="gaugeUnit">
-            RPM
-        </div>
-
-    </div>
-
-</div>
-
-
-<!-- =====================================================
-     3D CAR
-===================================================== -->
-
-<div id="carScene">
-
-
-    <div id="carGround">
-    </div>
-
-
-    <div
-    class="sensorZone"
-    id="frontSensor">
-    </div>
-
-
-    <div
-    class="sensorZone"
-    id="rearSensor">
-    </div>
-
-
-    <div id="carShadow">
-    </div>
-
-
-    <div id="carBody">
-
-
-        <div
-        class="headlight"
-        id="headlightLeft">
-        </div>
-
-
-        <div
-        class="headlight"
-        id="headlightRight">
-        </div>
-
-
-        <div id="carRoof">
-        </div>
-
-
-        <div id="windshield">
-        </div>
-
-
-        <div id="rearWindow">
-        </div>
-
-
-        <div
-        class="rearlight"
-        id="rearLightLeft">
-        </div>
-
-
-        <div
-        class="rearlight"
-        id="rearLightRight">
-        </div>
-
-
-        <div
-        class="wheel3d"
-        id="wheelFL">
-        </div>
-
-
-        <div
-        class="wheel3d"
-        id="wheelFR">
-        </div>
-
-
-        <div
-        class="wheel3d"
-        id="wheelRL">
-        </div>
-
-
-        <div
-        class="wheel3d"
-        id="wheelRR">
         </div>
 
 
     </div>
 
 
-    <div id="carDirection">
-        ▲
+    <!-- =================================================
+         DRIVER CAMERA
+    ================================================== -->
+
+    <div id="cameraPanel">
+
+        <video
+            id="driverCamera"
+            autoplay
+            playsinline
+            muted>
+        </video>
+
+
+        <div id="cameraState">
+            CAMERA OFF
+        </div>
+
+
+        <div id="eyeState">
+            EYES: --
+        </div>
+
+
+        <div id="drowsyState">
+            DRIVER NORMAL
+        </div>
+
+
+        <button id="cameraBtn">
+            START CAMERA
+        </button>
+
     </div>
 
 
-    <div id="carLabel">
-        RC CAR
-    </div>
+    <!-- =================================================
+         LEFT STEERING
+    ================================================== -->
 
-</div>
-
-
-<!-- =====================================================
-     CAMERA
-===================================================== -->
-
-<div id="cameraPanel">
+    <div id="steeringButtons">
 
 
-    <video
-    id="driverCamera"
-    autoplay
-    playsinline
-    muted>
-    </video>
+        <button
+            id="leftBtn"
+            class="steerBtn">
+
+            ◀
+            <br>
+            LEFT
+
+        </button>
 
 
-    <div id="cameraState">
-        CAMERA OFF
-    </div>
+        <button
+            id="rightBtn"
+            class="steerBtn">
 
+            RIGHT
+            <br>
+            ▶
 
-    <div id="eyeState">
-        EYES: --
-    </div>
+        </button>
+        <button
+            id="forwardBtn"
+            class="driveBtn">
 
-
-    <div id="drowsyState">
-        DROWSINESS: NORMAL
-    </div>
-
-
-    <button id="cameraBtn">
-        START CAMERA
-    </button>
-
-
-    <button id="switchCamera">
-        SWITCH
-    </button>
-
-</div>
-
-
-<!-- =====================================================
-     PEDALS
-===================================================== -->
-
-<div id="pedalStack">
-
-
-    <div
-    class="pedal"
-    id="fwdBtn">
-
-        <span style="font-size:20px;">
             ▲
-        </span>
+            <br>
+            FORWARD
 
-        FWD
-
-    </div>
+        </button>
 
 
-    <div
-    class="pedal"
-    id="backBtn">
+        <button
+            id="reverseBtn"
+            class="driveBtn">
 
-        <span style="font-size:20px;">
             ▼
-        </span>
+            <br>
+            BACKWARD
 
-        BACK
+        </button>
+
 
     </div>
 
-</div>
+
+    <!-- =================================================
+         OBSTACLE WARNING
+    ================================================== -->
+
+    <div id="obstacleWarning">
+
+        ⚠ OBSTACLE — STOP
+
+    </div>
 
 
-<!-- =====================================================
-     ROUND STEERING
-===================================================== -->
+    <!-- =================================================
+         DROWSINESS WARNING
+    ================================================== -->
 
-<div id="wheelWrap">
+    <div id="drowsyWarning">
 
+        <div id="drowsyWarningText">
 
-    <div id="wheel">
+            ⚠ SLEEPY DRIVER ⚠
 
-
-        <div
-        id="steeringMarker">
         </div>
 
+        <div id="drowsyWarningSub">
 
-        <div
-        class="steeringSpoke"
-        id="spokeLeft">
+            VEHICLE STOPPED
+
         </div>
 
-
-        <div
-        class="steeringSpoke"
-        id="spokeRight">
-        </div>
-
-
-        <div
-        class="steeringSpoke"
-        id="spokeBottom">
-        </div>
-
-
-        <div id="hub">
-        </div>
-
-
     </div>
 
 
-    <div id="steeringScale">
-    </div>
+    <!-- =================================================
+         HIDDEN CANVAS
+    ================================================== -->
 
-
-    <div id="steeringValue">
-        STEERING 0°
-    </div>
-
-</div>
-
-
-<!-- =====================================================
-     DROWSINESS WARNING
-===================================================== -->
-
-<div id="drowsyWarning">
-
-
-    <div id="drowsyWarningIcon">
-        ⚠️
-    </div>
-
-
-    <div id="drowsyWarningText">
-        DROWSINESS WARNING
-    </div>
-
-
-    <div id="drowsyWarningSub">
-        PLEASE OPEN YOUR EYES
-    </div>
+    <canvas
+        id="faceCanvas"
+        style="display:none;">
+    </canvas>
 
 
 </div>
 
-
-<!-- =====================================================
-     COLLISION
-===================================================== -->
-
-<div id="collisionOverlay">
-</div>
-
-
-<div id="collisionIcon">
-    ⚠️
-</div>
-
-
-</div>
-
-
-<!-- =====================================================
-     MEDIAPIPE
-===================================================== -->
-
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
-
-
-<!-- =====================================================
-     YOUR EXISTING SCRIPT
-===================================================== -->
-
-<script src="script.js"></script>
-
-
-<!-- =====================================================
-     VISUAL CONTROL LOGIC
-===================================================== -->
 
 <script>
 
 /* =====================================================
-   ELEMENTS
+   BLE UUID
 ===================================================== */
 
-const carScene =
-document.getElementById(
-    "carScene"
-);
+const SERVICE_UUID =
+    '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
 
-const frontSensor =
-document.getElementById(
-    "frontSensor"
-);
+const CMD_CHAR_UUID =
+    'beb5483e-36e1-4688-b7f5-ea07361b26a8';
 
-const rearSensor =
-document.getElementById(
-    "rearSensor"
-);
-
-const distFront =
-document.getElementById(
-    "distFront"
-);
-
-const distRear =
-document.getElementById(
-    "distRear"
-);
-
-const fwdBtn =
-document.getElementById(
-    "fwdBtn"
-);
-
-const backBtn =
-document.getElementById(
-    "backBtn"
-);
-
-const wheel =
-document.getElementById(
-    "wheel"
-);
-
-const steeringValue =
-document.getElementById(
-    "steeringValue"
-);
-
-const wheelFL =
-document.getElementById(
-    "wheelFL"
-);
-
-const wheelFR =
-document.getElementById(
-    "wheelFR"
-);
-
-const rearLightLeft =
-document.getElementById(
-    "rearLightLeft"
-);
-
-const rearLightRight =
-document.getElementById(
-    "rearLightRight"
-);
+const TELE_CHAR_UUID =
+    'beb5483e-36e1-4688-b7f5-ea07361b26a9';
 
 
 /* =====================================================
-   DISTANCE
+   CONSTANTS
 ===================================================== */
 
-function updateCarSensors(){
+const MAX_STEERING = 70;
 
-    const front =
-    parseFloat(
-        distFront.innerText
-    );
+const OBSTACLE_CM = 30;
 
-    const rear =
-    parseFloat(
-        distRear.innerText
-    );
+const EYE_WARN_MS = 2000;
+
+const EYE_ALERT_MS = 10000;
 
 
-    if(!isNaN(front)){
+/* =====================================================
+   BLE VARIABLES
+===================================================== */
 
-        const size =
-        Math.max(
-            45,
-            Math.min(
-                170,
-                front * 1.4
-            )
+let bleDevice = null;
+
+let bleServer = null;
+
+let cmdChar = null;
+
+let teleChar = null;
+
+
+/* =====================================================
+   CAMERA VARIABLES
+===================================================== */
+
+let cameraStream = null;
+
+let faceMesh = null;
+
+let cameraRunning = false;
+
+let processingFrame = false;
+
+let eyesClosedSince = 0;
+
+let drowsyPhase = 'NORMAL';
+
+
+/* =====================================================
+   DOM
+===================================================== */
+
+const app =
+    document.getElementById('app');
+
+const statusEl =
+    document.getElementById('status');
+
+const connectBtn =
+    document.getElementById('connectBtn');
+
+const bleDot =
+    document.getElementById('bleDot');
+
+const gpsDot =
+    document.getElementById('gpsDot');
+
+const gsmDot =
+    document.getElementById('gsmDot');
+
+const smsDot =
+    document.getElementById('smsDot');
+
+const frontEl =
+    document.getElementById('distFront');
+
+const rearEl =
+    document.getElementById('distRear');
+
+const speedNum =
+    document.getElementById('speedNum');
+
+const rpmNum =
+    document.getElementById('rpmNum');
+
+const ecoBtn =
+    document.getElementById('ecoBtn');
+
+const sportBtn =
+    document.getElementById('sportBtn');
+
+const cameraPanel =
+    document.getElementById('cameraPanel');
+
+const driverCamera =
+    document.getElementById('driverCamera');
+
+const cameraState =
+    document.getElementById('cameraState');
+
+const eyeState =
+    document.getElementById('eyeState');
+
+const drowsyState =
+    document.getElementById('drowsyState');
+
+const cameraBtn =
+    document.getElementById('cameraBtn');
+
+const drowsyWarning =
+    document.getElementById('drowsyWarning');
+
+const obstacleWarning =
+    document.getElementById('obstacleWarning');
+
+const forwardBtn =
+    document.getElementById('forwardBtn');
+
+const reverseBtn =
+    document.getElementById('reverseBtn');
+
+const leftBtn =
+    document.getElementById('leftBtn');
+
+const rightBtn =
+    document.getElementById('rightBtn');
+
+const coords =
+    document.getElementById('coords');
+
+const gpsReqBtn =
+    document.getElementById('gpsReqBtn');
+
+const smsBtn =
+    document.getElementById('smsBtn');
+
+const msgPanel =
+    document.getElementById('msgPanel');
+
+const msgInput =
+    document.getElementById('msgInput');
+
+const msgSendBtn =
+    document.getElementById('msgSendBtn');
+
+const msgStatus =
+    document.getElementById('msgStatus');
+
+
+/* =====================================================
+   BLE CONNECT
+===================================================== */
+
+connectBtn.addEventListener(
+    'click',
+    connectBLE
+);
+
+
+async function connectBLE(){
+
+    if(!navigator.bluetooth){
+
+        statusEl.textContent =
+            'BLE NOT SUPPORTED';
+
+        return;
+
+    }
+
+    try{
+
+        statusEl.textContent =
+            'REQUESTING DEVICE...';
+
+        bleDevice =
+            await navigator.bluetooth.requestDevice({
+
+                filters:[
+                    {
+                        services:[
+                            SERVICE_UUID
+                        ]
+                    }
+                ]
+
+            });
+
+
+        bleDevice.addEventListener(
+            'gattserverdisconnected',
+            onDisconnected
         );
 
 
-        frontSensor.style.width =
-        size + "px";
+        statusEl.textContent =
+            'CONNECTING...';
 
 
-        frontSensor.style.height =
-        size * .55 + "px";
+        bleServer =
+            await bleDevice.gatt.connect();
 
 
-        if(front <= 30){
-
-            carScene.classList.add(
-                "warning"
+        const service =
+            await bleServer.getPrimaryService(
+                SERVICE_UUID
             );
+
+
+        cmdChar =
+            await service.getCharacteristic(
+                CMD_CHAR_UUID
+            );
+
+
+        teleChar =
+            await service.getCharacteristic(
+                TELE_CHAR_UUID
+            );
+
+
+        await teleChar.startNotifications();
+
+
+        teleChar.addEventListener(
+            'characteristicvaluechanged',
+            onTelemetry
+        );
+
+
+        statusEl.textContent =
+            'CONNECTED';
+
+
+        bleDot.className =
+            'dot ok';
+
+
+        connectBtn.textContent =
+            'CONNECTED';
+
+
+    }catch(error){
+
+        console.error(error);
+
+        statusEl.textContent =
+            'CONNECTION FAILED';
+
+        bleDot.className =
+            'dot bad';
+
+    }
+
+}
+
+
+/* =====================================================
+   DISCONNECTED
+===================================================== */
+
+function onDisconnected(){
+
+    statusEl.textContent =
+        'DISCONNECTED';
+
+    bleDot.className =
+        'dot bad';
+
+    cmdChar = null;
+
+    teleChar = null;
+
+    stopCarUI();
+
+}
+
+
+/* =====================================================
+   SEND BLE COMMAND
+===================================================== */
+
+async function sendCmd(command){
+
+    if(!cmdChar){
+
+        return false;
+
+    }
+
+
+    try{
+
+        const data =
+            new TextEncoder()
+            .encode(command);
+
+
+        if(
+            cmdChar.properties &&
+            cmdChar.properties.write
+        ){
+
+            await cmdChar.writeValue(
+                data
+            );
+
+            return true;
+
+        }
+
+
+        if(
+            cmdChar.properties &&
+            cmdChar.properties.writeWithoutResponse
+        ){
+
+            await cmdChar.writeValueWithoutResponse(
+                data
+            );
+
+            return true;
+
+        }
+
+    }catch(error){
+
+        console.error(
+            'BLE COMMAND:',
+            error
+        );
+
+    }
+
+
+    return false;
+
+}
+
+
+/* =====================================================
+   TELEMETRY
+===================================================== */
+
+function onTelemetry(event){
+
+    const value =
+        new TextDecoder()
+        .decode(
+            event.target.value
+        );
+
+
+    console.log(
+        'TELEMETRY:',
+        value
+    );
+
+
+    const distanceMatch =
+        value.match(
+            /F:(-?\d+),R:(-?\d+)/
+        );
+
+
+    if(distanceMatch){
+
+        const front =
+            Number(
+                distanceMatch[1]
+            );
+
+        const rear =
+            Number(
+                distanceMatch[2]
+            );
+
+
+        if(Number.isFinite(front)){
+
+            frontEl.textContent =
+                front;
+
+            frontEl.classList.toggle(
+                'distanceDanger',
+                front > 0 &&
+                front <= OBSTACLE_CM
+            );
+
+        }
+
+
+        if(Number.isFinite(rear)){
+
+            rearEl.textContent =
+                rear;
+
+            rearEl.classList.toggle(
+                'distanceDanger',
+                rear > 0 &&
+                rear <= OBSTACLE_CM
+            );
+
+        }
+
+
+        checkObstacle(
+            front,
+            rear
+        );
+
+    }
+
+
+    /* GPS */
+
+    const gpsMatch =
+        value.match(
+            /GPS:(\d)/
+        );
+
+    const latMatch =
+        value.match(
+            /LAT:(-?\d+\.\d+)/
+        );
+
+    const lonMatch =
+        value.match(
+            /LON:(-?\d+\.\d+)/
+        );
+
+
+    if(gpsMatch){
+
+        const hasFix =
+            gpsMatch[1] === '1';
+
+
+        gpsDot.className =
+            hasFix
+            ? 'dot ok'
+            : 'dot bad';
+
+
+        if(
+            hasFix &&
+            latMatch &&
+            lonMatch
+        ){
+
+            coords.textContent =
+                latMatch[1] +
+                ', ' +
+                lonMatch[1];
 
         }else{
 
-            carScene.classList.remove(
-                "warning"
-            );
+            coords.textContent =
+                'NO GPS FIX';
 
         }
 
     }
 
 
-    if(!isNaN(rear)){
+    /* GSM */
 
-        const size =
-        Math.max(
-            45,
-            Math.min(
-                170,
-                rear * 1.4
-            )
+    const gsmMatch =
+        value.match(
+            /GSM:(\d)/
         );
 
 
-        rearSensor.style.width =
-        size + "px";
+    if(gsmMatch){
+
+        gsmDot.className =
+            gsmMatch[1] === '1'
+            ? 'dot ok'
+            : 'dot bad';
+
+    }
 
 
-        rearSensor.style.height =
-        size * .55 + "px";
+    /* SMS */
+
+    const smsMatch =
+        value.match(
+            /SMS:(\d)/
+        );
+
+
+    if(smsMatch){
+
+        smsDot.className =
+            smsMatch[1] === '1'
+            ? 'dot ok'
+            : 'dot';
 
     }
 
 }
-
-
-/* distance observer */
-
-const distanceObserver =
-new MutationObserver(
-    updateCarSensors
-);
-
-
-distanceObserver.observe(
-    distFront,
-    {
-        childList:true,
-        characterData:true,
-        subtree:true
-    }
-);
-
-
-distanceObserver.observe(
-    distRear,
-    {
-        childList:true,
-        characterData:true,
-        subtree:true
-    }
-);
-
-
-updateCarSensors();
 
 
 /* =====================================================
-   FORWARD
+   30 CM OBSTACLE SAFETY
 ===================================================== */
 
-function startForward(){
+function checkObstacle(
+    front,
+    rear
+){
 
-    carScene.classList.add(
-        "moving"
-    );
-
-
-    document.getElementById(
-        "carDirection"
-    ).innerText = "▲";
-
-
-    rearLightLeft.style.background =
-    "#550808";
+    const movingForward =
+        forwardBtn.classList.contains(
+            'active'
+        );
 
 
-    rearLightRight.style.background =
-    "#550808";
-
-}
-
-
-fwdBtn.addEventListener(
-    "pointerdown",
-    startForward
-);
-
-fwdBtn.addEventListener(
-    "pointerup",
-    stopCarVisual
-);
-
-fwdBtn.addEventListener(
-    "pointercancel",
-    stopCarVisual
-);
+    const movingReverse =
+        reverseBtn.classList.contains(
+            'active'
+        );
 
 
-/* =====================================================
-   BACKWARD
-===================================================== */
-
-function startBackward(){
-
-    carScene.classList.add(
-        "moving"
-    );
+    const frontDanger =
+        Number.isFinite(front) &&
+        front > 0 &&
+        front <= OBSTACLE_CM;
 
 
-    document.getElementById(
-        "carDirection"
-    ).innerText = "▼";
+    const rearDanger =
+        Number.isFinite(rear) &&
+        rear > 0 &&
+        rear <= OBSTACLE_CM;
 
 
-    rearLightLeft.style.background =
-    "#ff1111";
+    if(
+        (movingForward && frontDanger) ||
+        (movingReverse && rearDanger)
+    ){
+
+        obstacleWarning.classList.add(
+            'active'
+        );
 
 
-    rearLightRight.style.background =
-    "#ff1111";
+        forwardBtn.classList.remove(
+            'active'
+        );
+
+        reverseBtn.classList.remove(
+            'active'
+        );
 
 
-    rearLightLeft.style.boxShadow =
-    "0 0 12px #ff0000";
+        speedNum.textContent =
+            '0';
+
+        rpmNum.textContent =
+            '0';
 
 
-    rearLightRight.style.boxShadow =
-    "0 0 12px #ff0000";
+        sendCmd('S');
+
+    }else{
+
+        obstacleWarning.classList.remove(
+            'active'
+        );
+
+    }
 
 }
-
-
-backBtn.addEventListener(
-    "pointerdown",
-    startBackward
-);
-
-backBtn.addEventListener(
-    "pointerup",
-    stopCarVisual
-);
-
-backBtn.addEventListener(
-    "pointercancel",
-    stopCarVisual
-);
 
 
 /* =====================================================
    STOP
 ===================================================== */
 
-function stopCarVisual(){
+function stopCarUI(){
 
-    carScene.classList.remove(
-        "moving"
+    forwardBtn.classList.remove(
+        'active'
+    );
+
+    reverseBtn.classList.remove(
+        'active'
     );
 
 
-    rearLightLeft.style.background =
-    "#550808";
+    speedNum.textContent =
+        '0';
+
+    rpmNum.textContent =
+        '0';
 
 
-    rearLightRight.style.background =
-    "#550808";
-
-
-    rearLightLeft.style.boxShadow =
-    "inset 0 0 5px #000";
-
-
-    rearLightRight.style.boxShadow =
-    "inset 0 0 5px #000";
+    sendCmd('S');
 
 }
 
 
 /* =====================================================
-   ROUND STEERING
+   FORWARD
 ===================================================== */
 
-let steeringAngle =
-0;
+function driveForward(){
 
-let steeringActive =
-false;
+    if(
+        drowsyPhase !== 'NORMAL'
+    ){
 
-let startX =
-0;
+        stopCarUI();
 
-let startSteering =
-0;
-
-
-/* touch start */
-
-wheel.addEventListener(
-    "pointerdown",
-    function(e){
-
-        e.preventDefault();
-
-        steeringActive =
-        true;
-
-
-        startX =
-        e.clientX;
-
-
-        startSteering =
-        steeringAngle;
-
-
-        wheel.setPointerCapture(
-            e.pointerId
-        );
-
-    }
-);
-
-
-/* touch movement */
-
-wheel.addEventListener(
-    "pointermove",
-    function(e){
-
-        if(!steeringActive)
-            return;
-
-
-        e.preventDefault();
-
-
-        const dx =
-        e.clientX - startX;
-
-
-        steeringAngle =
-        startSteering +
-        dx * .55;
-
-
-        steeringAngle =
-        Math.max(
-            -90,
-            Math.min(
-                90,
-                steeringAngle
-            )
-        );
-
-
-        updateSteering();
-
-    }
-);
-
-
-/* release */
-
-function releaseSteering(e){
-
-    if(!steeringActive)
         return;
 
+    }
 
-    steeringActive =
-    false;
 
+    forwardBtn.classList.add(
+        'active'
+    );
+
+    reverseBtn.classList.remove(
+        'active'
+    );
+
+
+    sendCmd('F');
+
+    updateDriveDisplay();
+
+}
+
+
+/* =====================================================
+   BACKWARD
+===================================================== */
+
+function driveReverse(){
+
+    if(
+        drowsyPhase !== 'NORMAL'
+    ){
+
+        stopCarUI();
+
+        return;
+
+    }
+
+
+    reverseBtn.classList.add(
+        'active'
+    );
+
+    forwardBtn.classList.remove(
+        'active'
+    );
+
+
+    sendCmd('B');
+
+    updateDriveDisplay();
+
+}
+
+
+/* =====================================================
+   F / B BUTTONS
+===================================================== */
+
+forwardBtn.addEventListener(
+    'pointerdown',
+    event=>{
+
+        event.preventDefault();
+
+        driveForward();
+
+    }
+);
+
+
+reverseBtn.addEventListener(
+    'pointerdown',
+    event=>{
+
+        event.preventDefault();
+
+        driveReverse();
+
+    }
+);
+
+
+window.addEventListener(
+    'pointerup',
+    ()=>{
+
+        stopCarUI();
+
+    }
+);
+
+
+/* =====================================================
+   LEFT / RIGHT
+===================================================== */
+
+leftBtn.addEventListener(
+    'pointerdown',
+    event=>{
+
+        event.preventDefault();
+
+        if(
+            drowsyPhase === 'NORMAL'
+        ){
+
+            sendCmd('L:-70');
+
+        }
+
+    }
+);
+
+
+rightBtn.addEventListener(
+    'pointerdown',
+    event=>{
+
+        event.preventDefault();
+
+        if(
+            drowsyPhase === 'NORMAL'
+        ){
+
+            sendCmd('L:70');
+
+        }
+
+    }
+);
+
+
+leftBtn.addEventListener(
+    'pointerup',
+    ()=>{
+
+        sendCmd('L:0');
+
+    }
+);
+
+
+leftBtn.addEventListener(
+    'pointercancel',
+    ()=>{
+
+        sendCmd('L:0');
+
+    }
+);
+
+
+rightBtn.addEventListener(
+    'pointerup',
+    ()=>{
+
+        sendCmd('L:0');
+
+    }
+);
+
+
+rightBtn.addEventListener(
+    'pointercancel',
+    ()=>{
+
+        sendCmd('L:0');
+
+    }
+);
+
+
+/* =====================================================
+   SPEED / RPM DISPLAY
+===================================================== */
+
+function updateDriveDisplay(){
+
+    const sport =
+        sportBtn.classList.contains(
+            'active'
+        );
+
+
+    if(
+        forwardBtn.classList.contains(
+            'active'
+        )
+    ){
+
+        speedNum.textContent =
+            sport ? '25' : '10';
+
+        rpmNum.textContent =
+            sport ? '3000' : '1400';
+
+
+    }else if(
+        reverseBtn.classList.contains(
+            'active'
+        )
+    ){
+
+        speedNum.textContent =
+            sport ? '20' : '8';
+
+        rpmNum.textContent =
+            sport ? '2500' : '1200';
+
+
+    }else{
+
+        speedNum.textContent =
+            '0';
+
+        rpmNum.textContent =
+            '0';
+
+    }
+
+}
+
+
+/* =====================================================
+   ECO / SPORT
+===================================================== */
+
+ecoBtn.addEventListener(
+    'click',
+    ()=>{
+
+        ecoBtn.classList.add(
+            'active'
+        );
+
+        sportBtn.classList.remove(
+            'active'
+        );
+
+        app.classList.remove(
+            'sport'
+        );
+
+
+        sendCmd(
+            'MODE:ECO'
+        );
+
+
+        updateDriveDisplay();
+
+    }
+);
+
+
+sportBtn.addEventListener(
+    'click',
+    ()=>{
+
+        sportBtn.classList.add(
+            'active'
+        );
+
+        ecoBtn.classList.remove(
+            'active'
+        );
+
+        app.classList.add(
+            'sport'
+        );
+
+
+        sendCmd(
+            'MODE:SPORT'
+        );
+
+
+        updateDriveDisplay();
+
+    }
+);
+
+
+/* =====================================================
+   GPS
+===================================================== */
+
+gpsReqBtn.addEventListener(
+    'click',
+    ()=>{
+
+        sendCmd(
+            'GPS?'
+        );
+
+    }
+);
+
+
+/* =====================================================
+   SMS PANEL
+===================================================== */
+
+smsBtn.addEventListener(
+    'click',
+    ()=>{
+
+        msgPanel.classList.toggle(
+            'open'
+        );
+
+    }
+);
+
+
+msgSendBtn.addEventListener(
+    'click',
+    async()=>{
+
+        const message =
+            msgInput.value.trim();
+
+
+        if(!message){
+
+            msgStatus.textContent =
+                'ENTER MESSAGE';
+
+            return;
+
+        }
+
+
+        msgStatus.textContent =
+            'SENDING...';
+
+
+        const success =
+            await sendCmd(
+                'MSG:' +
+                message
+            );
+
+
+        if(success){
+
+            msgStatus.textContent =
+                'MESSAGE SENT';
+
+            msgInput.value =
+                '';
+
+        }else{
+
+            msgStatus.textContent =
+                'CAR NOT CONNECTED';
+
+        }
+
+    }
+);
+
+
+/* =====================================================
+   CAMERA
+===================================================== */
+
+async function startCamera(){
 
     try{
 
-        wheel.releasePointerCapture(
-            e.pointerId
-        );
+        if(cameraStream){
 
-    }catch(err){}
+            cameraStream
+                .getTracks()
+                .forEach(
+                    track=>{
+                        track.stop();
+                    }
+                );
 
-
-    returnSteeringToCenter();
-
-}
-
-
-wheel.addEventListener(
-    "pointerup",
-    releaseSteering
-);
+        }
 
 
-wheel.addEventListener(
-    "pointercancel",
-    releaseSteering
-);
+        cameraStream =
+            await navigator.mediaDevices
+                .getUserMedia({
+
+                    video:{
+                        facingMode:'user'
+                    },
+
+                    audio:false
+
+                });
 
 
-/* =====================================================
-   UPDATE STEERING
-===================================================== */
-
-function updateSteering(){
-
-    wheel.style.transform =
-    "rotate(" +
-    steeringAngle +
-    "deg)";
+        driverCamera.srcObject =
+            cameraStream;
 
 
-    steeringValue.innerText =
-    "STEERING " +
-    Math.round(
-        steeringAngle
-    ) +
-    "°";
+        cameraState.textContent =
+            'CAMERA ACTIVE';
 
 
-    const carAngle =
-    steeringAngle * .45;
+        cameraBtn.textContent =
+            'CAMERA ON';
 
 
-    wheelFL.style.transform =
-    "rotate(" +
-    carAngle +
-    "deg)";
+        cameraRunning =
+            true;
 
 
-    wheelFR.style.transform =
-    "rotate(" +
-    carAngle +
-    "deg)";
+        await setupFaceMesh();
+
+
+    }catch(error){
+
+        console.error(error);
+
+        cameraState.textContent =
+            'CAMERA ERROR';
+
+    }
 
 }
 
 
+cameraBtn.addEventListener(
+    'click',
+    startCamera
+);
+
+
 /* =====================================================
-   RETURN STEERING TO CENTER
+   FACE MESH
 ===================================================== */
 
-function returnSteeringToCenter(){
+async function setupFaceMesh(){
 
-    const timer =
-    setInterval(
-        function(){
+    if(faceMesh){
+        return;
+    }
 
-            steeringAngle *=
-            .82;
 
+    if(
+        typeof FaceMesh ===
+        'undefined'
+    ){
+
+        eyeState.textContent =
+            'AI NOT LOADED';
+
+        return;
+
+    }
+
+
+    faceMesh =
+        new FaceMesh({
+
+            locateFile:
+                file =>
+                `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+
+        });
+
+
+    faceMesh.setOptions({
+
+        maxNumFaces:1,
+
+        refineLandmarks:true,
+
+        minDetectionConfidence:
+            0.5,
+
+        minTrackingConfidence:
+            0.5
+
+    });
+
+
+    faceMesh.onResults(
+        handleFaceResults
+    );
+
+
+    processCameraFrame();
+
+}
+
+
+/* =====================================================
+   CAMERA FRAME LOOP
+===================================================== */
+
+async function processCameraFrame(){
+
+    if(!cameraRunning){
+        return;
+    }
+
+
+    if(
+        faceMesh &&
+        !processingFrame &&
+        driverCamera.readyState >= 2
+    ){
+
+        processingFrame =
+            true;
+
+
+        try{
+
+            await faceMesh.send({
+
+                image:
+                    driverCamera
+
+            });
+
+        }catch(error){
+
+            console.error(
+                'FACE MESH ERROR:',
+                error
+            );
+
+        }
+
+
+        processingFrame =
+            false;
+
+    }
+
+
+    requestAnimationFrame(
+        processCameraFrame
+    );
+
+}
+    </div>
+
+
+    <!-- =================================================
+         RIGHT DRIVE
+    ================================================== -->
+
+    <div id="driveButtons">
+
+        <button
+            id="forwardBtn"
+            class="driveBtn">
+
+            ▲
+            <br>
+            FORWARD
+
+        </button>
+
+
+        <button
+            id="reverseBtn"
+            class="driveBtn">
+
+            ▼
+            <br>
+            BACKWARD
+
+        </button>
+
+    </div>
+
+
+    <!-- =================================================
+         OBSTACLE WARNING
+    ================================================== -->
+
+    <div id="obstacleWarning">
+
+        <div class="warningIcon">
+            ⚠
+        </div>
+
+        <div class="warningTitle">
+            OBSTACLE DETECTED
+        </div>
+
+        <div id="warningText">
+            Vehicle stopped for safety
+        </div>
+
+    </div>
+
+
+    <!-- =================================================
+         DROWSINESS WARNING
+    ================================================== -->
+
+    <div id="drowsyWarning">
+
+        <div class="drowsyBox">
+
+            <div class="drowsyIcon">
+                ⚠
+            </div>
+
+            <div class="drowsyTitle">
+                SLEEPY DRIVER
+            </div>
+
+            <div class="drowsyMessage">
+                Please stay alert.
+            </div>
+
+            <div class="drowsyStop">
+                VEHICLE STOPPED
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =================================================
+         JAVASCRIPT - CAR CONTROL
+    ================================================== -->
+
+
+    <script>
+
+
+        /* =================================================
+           BLE UUID
+        ================================================= */
+
+        const SERVICE_UUID =
+            "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+
+        const CMD_UUID =
+            "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+
+        const TELE_UUID =
+            "beb5483e-36e1-4688-b7f5-ea07361b26a9";
+
+
+        /* =================================================
+           BLE VARIABLES
+        ================================================= */
+
+        let bleDevice = null;
+
+        let cmdCharacteristic = null;
+
+        let teleCharacteristic = null;
+
+
+        /* =================================================
+           DISTANCE VARIABLES
+        ================================================= */
+
+        let frontCm = 999;
+
+        let rearCm = 999;
+
+        const OBSTACLE_LIMIT = 30;
+
+        let obstacleStopping = false;
+
+
+        /* =================================================
+           CURRENT MODE
+        ================================================= */
+
+        let currentMode = "ECO";
+
+
+        /* =================================================
+           GET ELEMENTS
+        ================================================= */
+
+        const forwardBtn =
+            document.getElementById(
+                "forwardBtn"
+            );
+
+        const reverseBtn =
+            document.getElementById(
+                "reverseBtn"
+            );
+
+        const leftBtn =
+            document.getElementById(
+                "leftBtn"
+            );
+
+        const rightBtn =
+            document.getElementById(
+                "rightBtn"
+            );
+
+        const obstacleWarning =
+            document.getElementById(
+                "obstacleWarning"
+            );
+
+        const warningText =
+            document.getElementById(
+                "warningText"
+            );
+
+
+        /* =================================================
+           BLE STATUS
+        ================================================= */
+
+        const bleStatus =
+            document.getElementById(
+                "bleStatus"
+            );
+
+
+        /* =================================================
+           SEND BLE COMMAND
+        ================================================= */
+
+        async function sendCmd(
+            command
+        ){
 
             if(
-                Math.abs(
-                    steeringAngle
-                ) < .5
+                !cmdCharacteristic
             ){
 
-                steeringAngle =
-                0;
-
-
-                clearInterval(
-                    timer
+                console.log(
+                    "BLE not connected:",
+                    command
                 );
+
+                return;
 
             }
 
 
-            updateSteering();
+            try{
 
-        },
-        16
+                const data =
+                    new TextEncoder()
+                    .encode(
+                        command
+                    );
+
+
+                if(
+                    cmdCharacteristic
+                    .writeWithoutResponse
+                ){
+
+                    await
+                    cmdCharacteristic
+                    .writeValueWithoutResponse(
+                        data
+                    );
+
+                }else{
+
+                    await
+                    cmdCharacteristic
+                    .writeValue(
+                        data
+                    );
+
+                }
+
+
+                console.log(
+                    "BLE →",
+                    command
+                );
+
+
+            }catch(error){
+
+                console.error(
+                    "BLE SEND ERROR:",
+                    error
+                );
+
+            }
+
+        }
+
+
+        /* =================================================
+           BLE CONNECT
+        ================================================== */
+
+        async function connectBLE(){
+
+            if(
+                !navigator.bluetooth
+            ){
+
+                if(bleStatus){
+
+                    bleStatus.textContent =
+                        "BLE NOT SUPPORTED";
+
+                }
+
+                return;
+
+            }
+
+
+            try{
+
+                if(bleStatus){
+
+                    bleStatus.textContent =
+                        "BLE CONNECTING...";
+
+                }
+
+
+                bleDevice =
+                    await
+                    navigator.bluetooth
+                    .requestDevice({
+
+                        filters:[
+                            {
+                                services:[
+                                    SERVICE_UUID
+                                ]
+                            }
+                        ]
+
+                    });
+
+
+                bleDevice
+                .addEventListener(
+                    "gattserverdisconnected",
+                    handleBLEDisconnect
+                );
+
+
+                const server =
+                    await
+                    bleDevice
+                    .gatt
+                    .connect();
+
+
+                const service =
+                    await
+                    server
+                    .getPrimaryService(
+                        SERVICE_UUID
+                    );
+
+
+                cmdCharacteristic =
+                    await
+                    service
+                    .getCharacteristic(
+                        CMD_UUID
+                    );
+
+
+                try{
+
+                    teleCharacteristic =
+                        await
+                        service
+                        .getCharacteristic(
+                            TELE_UUID
+                        );
+
+
+                    await
+                    teleCharacteristic
+                    .startNotifications();
+
+
+                    teleCharacteristic
+                    .addEventListener(
+                        "characteristicvaluechanged",
+                        handleTelemetry
+                    );
+
+
+                }catch(
+                    telemetryError
+                ){
+
+                    console.log(
+                        "Telemetry unavailable"
+                    );
+
+                }
+
+
+                if(bleStatus){
+
+                    bleStatus.textContent =
+                        "BLE CONNECTED";
+
+                    bleStatus.style.color =
+                        "#4caf50";
+
+                }
+
+
+                await
+                sendCmd(
+                    "MODE:" +
+                    currentMode
+                );
+
+
+            }catch(error){
+
+                console.error(
+                    "BLE ERROR:",
+                    error
+                );
+
+
+                if(bleStatus){
+
+                    bleStatus.textContent =
+                        "BLE NOT CONNECTED";
+
+                    bleStatus.style.color =
+                        "#f44336";
+
+                }
+
+            }
+
+        }
+
+
+        /* =================================================
+           BLE DISCONNECT
+        ================================================== */
+
+        function handleBLEDisconnect(){
+
+            cmdCharacteristic =
+                null;
+
+            teleCharacteristic =
+                null;
+
+
+            if(bleStatus){
+
+                bleStatus.textContent =
+                    "BLE DISCONNECTED";
+
+                bleStatus.style.color =
+                    "#f44336";
+
+            }
+
+
+            stopCarUI();
+
+        }
+
+
+        /* =================================================
+           TELEMETRY
+        ================================================== */
+
+        function handleTelemetry(
+            event
+        ){
+
+            const text =
+                new TextDecoder()
+                .decode(
+                    event.target.value
+                );
+
+
+            console.log(
+                "ESP32 TELEMETRY:",
+                text
+            );
+
+
+            /* -----------------------------------------
+               FRONT DISTANCE
+            ----------------------------------------- */
+
+            const frontMatch =
+                text.match(
+                    /F:(-?\d+)/
+                );
+
+
+            if(frontMatch){
+
+                frontCm =
+                    Number(
+                        frontMatch[1]
+                    );
+
+            }
+
+
+            /* -----------------------------------------
+               REAR DISTANCE
+            ----------------------------------------- */
+
+            const rearMatch =
+                text.match(
+                    /R:(-?\d+)/
+                );
+
+
+            if(rearMatch){
+
+                rearCm =
+                    Number(
+                        rearMatch[1]
+                    );
+
+            }
+
+
+            /* -----------------------------------------
+               FRONT DISPLAY
+            ----------------------------------------- */
+
+            const frontDisplay =
+                document.getElementById(
+                    "frontDistance"
+                );
+
+
+            if(
+                frontDisplay &&
+                frontMatch
+            ){
+
+                frontDisplay.textContent =
+                    frontCm +
+                    " cm";
+
+            }
+
+
+            /* -----------------------------------------
+               REAR DISPLAY
+            ----------------------------------------- */
+
+            const rearDisplay =
+                document.getElementById(
+                    "rearDistance"
+                );
+
+
+            if(
+                rearDisplay &&
+                rearMatch
+            ){
+
+                rearDisplay.textContent =
+                    rearCm +
+                    " cm";
+
+            }
+
+
+            /* -----------------------------------------
+               GPS
+            ----------------------------------------- */
+
+            const gpsMatch =
+                text.match(
+                    /GPS:(\d)/
+                );
+
+
+            if(gpsMatch){
+
+                const gpsConnected =
+                    gpsMatch[1] === "1";
+
+
+                const gpsStatus =
+                    document.getElementById(
+                        "gpsStatus"
+                    );
+
+
+                if(gpsStatus){
+
+                    gpsStatus.textContent =
+                        gpsConnected
+                        ? "GPS CONNECTED"
+                        : "GPS NOT CONNECTED";
+
+                    gpsStatus.style.color =
+                        gpsConnected
+                        ? "#4caf50"
+                        : "#f44336";
+
+                }
+
+            }
+
+
+            /* -----------------------------------------
+               LATITUDE
+            ----------------------------------------- */
+
+            const latMatch =
+                text.match(
+                    /LAT:([-0-9.]+)/
+                );
+
+
+            const latitude =
+                document.getElementById(
+                    "latitude"
+                );
+
+
+            if(
+                latitude &&
+                latMatch
+            ){
+
+                latitude.textContent =
+                    latMatch[1];
+
+            }
+
+
+            /* -----------------------------------------
+               LONGITUDE
+            ----------------------------------------- */
+
+            const lonMatch =
+                text.match(
+                    /LON:([-0-9.]+)/
+                );
+
+
+            const longitude =
+                document.getElementById(
+                    "longitude"
+                );
+
+
+            if(
+                longitude &&
+                lonMatch
+            ){
+
+                longitude.textContent =
+                    lonMatch[1];
+
+            }
+
+
+            /* -----------------------------------------
+               GSM
+            ----------------------------------------- */
+
+            const gsmMatch =
+                text.match(
+                    /GSM:(\d)/
+                );
+
+
+            const gsmStatus =
+                document.getElementById(
+                    "gsmStatus"
+                );
+
+
+            if(
+                gsmStatus &&
+                gsmMatch
+            ){
+
+                gsmStatus.textContent =
+                    gsmMatch[1] === "1"
+                    ? "GSM CONNECTED"
+                    : "GSM NOT CONNECTED";
+
+            }
+
+
+            /* -----------------------------------------
+               SMS
+            ----------------------------------------- */
+
+            const smsMatch =
+                text.match(
+                    /SMS:(\d)/
+                );
+
+
+            const smsStatus =
+                document.getElementById(
+                    "smsStatus"
+                );
+
+
+            if(
+                smsStatus &&
+                smsMatch
+            ){
+
+                smsStatus.textContent =
+                    "SMS STATUS: " +
+                    smsMatch[1];
+
+            }
+
+
+            /* -----------------------------------------
+               CHECK OBSTACLE
+            ----------------------------------------- */
+
+            checkObstacle();
+
+        }
+
+
+        /* =================================================
+           OBSTACLE SAFETY
+        ================================================== */
+
+        function checkObstacle(){
+
+            /* -----------------------------------------
+               FORWARD
+            ----------------------------------------- */
+
+            if(
+                forwardBtn &&
+                forwardBtn.classList
+                .contains("active") &&
+                frontCm <= OBSTACLE_LIMIT
+            ){
+
+                obstacleStopping =
+                    true;
+
+
+                warningText.textContent =
+                    "FRONT OBSTACLE: " +
+                    frontCm +
+                    " CM";
+
+
+                obstacleWarning
+                .classList
+                .add("active");
+
+
+                forwardBtn
+                .classList
+                .remove("active");
+
+
+                sendCmd("S");
+
+                updateSpeed(0);
+
+                return;
+
+            }
+
+
+            /* -----------------------------------------
+               REVERSE
+            ----------------------------------------- */
+
+            if(
+                reverseBtn &&
+                reverseBtn.classList
+                .contains("active") &&
+                rearCm <= OBSTACLE_LIMIT
+            ){
+
+                obstacleStopping =
+                    true;
+
+
+                warningText.textContent =
+                    "REAR OBSTACLE: " +
+                    rearCm +
+                    " CM";
+
+
+                obstacleWarning
+                .classList
+                .add("active");
+
+
+                reverseBtn
+                .classList
+                .remove("active");
+
+
+                sendCmd("S");
+
+                updateSpeed(0);
+
+                return;
+
+            }
+
+
+            obstacleStopping =
+                false;
+
+
+            obstacleWarning
+            .classList
+            .remove("active");
+
+        }
+
+
+        /* =================================================
+           STOP CAR
+        ================================================== */
+
+        function stopCarUI(){
+
+            if(forwardBtn){
+
+                forwardBtn
+                .classList
+                .remove("active");
+
+            }
+
+
+            if(reverseBtn){
+
+                reverseBtn
+                .classList
+                .remove("active");
+
+            }
+
+
+            sendCmd("S");
+
+            updateSpeed(0);
+
+        }
+
+
+        /* =================================================
+           FORWARD
+        ================================================== */
+
+        function startForward(){
+
+            if(
+                drowsyPhase !==
+                "NORMAL"
+            ){
+
+                return;
+
+            }
+
+
+            if(
+                frontCm <=
+                OBSTACLE_LIMIT
+            ){
+
+                obstacleStopping =
+                    true;
+
+
+                warningText.textContent =
+                    "FRONT OBSTACLE: " +
+                    frontCm +
+                    " CM";
+
+
+                obstacleWarning
+                .classList
+                .add("active");
+
+
+                sendCmd("S");
+
+                return;
+
+            }
+
+
+            obstacleStopping =
+                false;
+
+
+            obstacleWarning
+            .classList
+            .remove("active");
+
+
+            forwardBtn
+            .classList
+            .add("active");
+
+
+            reverseBtn
+            .classList
+            .remove("active");
+
+
+            sendCmd("F");
+
+
+            updateSpeed(
+                currentMode === "SPORT"
+                ? 25
+                : 15
+            );
+
+        }
+
+
+        /* =================================================
+           REVERSE
+        ================================================== */
+
+        function startReverse(){
+
+            if(
+                drowsyPhase !==
+                "NORMAL"
+            ){
+
+                return;
+
+            }
+
+
+            if(
+                rearCm <=
+                OBSTACLE_LIMIT
+            ){
+
+                obstacleStopping =
+                    true;
+
+
+                warningText.textContent =
+                    "REAR OBSTACLE: " +
+                    rearCm +
+                    " CM";
+
+
+                obstacleWarning
+                .classList
+                .add("active");
+
+
+                sendCmd("S");
+
+                return;
+
+            }
+
+
+            obstacleStopping =
+                false;
+
+
+            obstacleWarning
+            .classList
+            .remove("active");
+
+
+            reverseBtn
+            .classList
+            .add("active");
+
+
+            forwardBtn
+            .classList
+            .remove("active");
+
+
+            sendCmd("B");
+
+
+            updateSpeed(
+                currentMode === "SPORT"
+                ? 22
+                : 13
+            );
+
+        }
+
+
+        /* =================================================
+   DRIVE BUTTON EVENTS
+================================================= */
+
+forwardBtn.addEventListener(
+    "pointerdown",
+    startForward
+);
+
+reverseBtn.addEventListener(
+    "pointerdown",
+    startReverse
+);
+
+
+/* =================================================
+   FORWARD RELEASE
+================================================= */
+
+forwardBtn.addEventListener(
+    "pointerup",
+    function(){
+
+        stopCarUI();
+
+    }
+);
+
+
+forwardBtn.addEventListener(
+    "pointercancel",
+    function(){
+
+        stopCarUI();
+
+    }
+);
+
+
+/* =================================================
+   BACKWARD RELEASE
+================================================= */
+
+reverseBtn.addEventListener(
+    "pointerup",
+    function(){
+
+        stopCarUI();
+
+    }
+);
+
+
+reverseBtn.addEventListener(
+    "pointercancel",
+    function(){
+
+        stopCarUI();
+
+    }
+);
+
+
+/* =================================================
+   STEERING LEFT
+================================================= */
+
+leftBtn.addEventListener(
+    "pointerdown",
+    function(){
+
+        if(
+            drowsyPhase !== "NORMAL"
+        ){
+
+            return;
+
+        }
+
+
+        leftBtn
+            .classList
+            .add("active");
+
+
+        rightBtn
+            .classList
+            .remove("active");
+
+
+        sendCmd(
+            "L:-70"
+        );
+
+    }
+);
+
+
+leftBtn.addEventListener(
+    "pointerup",
+    function(){
+
+        leftBtn
+            .classList
+            .remove("active");
+
+
+        sendCmd(
+            "L:0"
+        );
+
+    }
+);
+
+
+leftBtn.addEventListener(
+    "pointercancel",
+    function(){
+
+        leftBtn
+            .classList
+            .remove("active");
+
+
+        sendCmd(
+            "L:0"
+        );
+
+    }
+);
+
+
+/* =================================================
+   STEERING RIGHT
+================================================= */
+
+rightBtn.addEventListener(
+    "pointerdown",
+    function(){
+
+        if(
+            drowsyPhase !== "NORMAL"
+        ){
+
+            return;
+
+        }
+
+
+        rightBtn
+            .classList
+            .add("active");
+
+
+        leftBtn
+            .classList
+            .remove("active");
+
+
+        sendCmd(
+            "L:70"
+        );
+
+    }
+);
+
+
+rightBtn.addEventListener(
+    "pointerup",
+    function(){
+
+        rightBtn
+            .classList
+            .remove("active");
+
+
+        sendCmd(
+            "L:0"
+        );
+
+    }
+);
+
+
+rightBtn.addEventListener(
+    "pointercancel",
+    function(){
+
+        rightBtn
+            .classList
+            .remove("active");
+
+
+        sendCmd(
+            "L:0"
+        );
+
+    }
+);
+
+
+/* =================================================
+   SPEED / RPM
+================================================= */
+
+function updateSpeed(
+    speed
+){
+
+    if(
+        speedNum
+    ){
+
+        speedNum.textContent =
+            speed;
+
+    }
+
+
+    if(
+        rpmNum
+    ){
+
+        rpmNum.textContent =
+            Math.round(
+                speed * 140
+            );
+
+    }
+
+}
+
+
+/* =================================================
+   MODE
+================================================= */
+
+function setMode(
+    mode
+){
+
+    currentMode =
+        mode;
+
+
+    sendCmd(
+        "MODE:" + mode
+    );
+
+
+    if(
+        modeText
+    ){
+
+        modeText.textContent =
+            mode;
+
+    }
+
+
+    if(
+        mode === "SPORT"
+    ){
+
+        forwardBtn
+            .classList
+            .add("sport");
+
+        reverseBtn
+            .classList
+            .add("sport");
+
+    }else{
+
+        forwardBtn
+            .classList
+            .remove("sport");
+
+        reverseBtn
+            .classList
+            .remove("sport");
+
+    }
+
+}
+
+
+/* =================================================
+   GPS REQUEST
+================================================= */
+
+function requestGPS(){
+
+    sendCmd(
+        "GPS?"
     );
 
 }
 
 
-/* =====================================================
-   COLLISION
-===================================================== */
+/* =================================================
+   SEND SMS MESSAGE
+================================================= */
 
-const collisionOverlay =
-document.getElementById(
-    "collisionOverlay"
-);
-
-
-const collisionObserver =
-new MutationObserver(
-    function(){
-
-        if(
-            collisionOverlay
-            .classList
-            .contains("active")
-        ){
-
-            carScene.classList.add(
-                "warning"
-            );
-
-        }else{
-
-            carScene.classList.remove(
-                "warning"
-            );
-
-        }
-
-    }
-);
-
-
-collisionObserver.observe(
-    collisionOverlay,
-    {
-        attributes:true,
-        attributeFilter:[
-            "class"
-        ]
-    }
-);
-
-
-/* =====================================================
-   DROWSINESS WARNING
-===================================================== */
-
-const drowsyWarning =
-document.getElementById(
-    "drowsyWarning"
-);
-
-const eyeState =
-document.getElementById(
-    "eyeState"
-);
-
-const drowsyState =
-document.getElementById(
-    "drowsyState"
-);
-
-
-/*
-    Read the status generated
-    by the existing face detection.
-*/
-
-function checkDrowsiness(){
+function sendSMS(
+    message
+){
 
     if(
-        !eyeState ||
-        !drowsyState ||
-        !drowsyWarning
+        !message
     ){
 
         return;
@@ -3174,137 +4064,318 @@ function checkDrowsiness(){
     }
 
 
-    const eyeText =
-    eyeState.innerText
-    .toUpperCase();
-
-
-    const drowsyText =
-    drowsyState.innerText
-    .toUpperCase();
-
-
-    const eyesClosed =
-    eyeText.includes(
-        ""CLOSED"
-    ) ||
-    eyeText.includes(
-        "CLOSE"
+    sendCmd(
+        "MSG:" + message
     );
 
+}
 
-    const drowsy =
-    drowsyText.includes(
-        "DROWSY"
-    ) ||
-    drowsyText.includes(
-        "WARNING"
-    ) ||
-    drowsyText.includes(
-        "ALERT"
-    );
 
+/* =================================================
+   DROWSINESS UI
+================================================= */
+
+function setDrowsyUI(){
+
+    drowsyState.textContent =
+        "SLEEPY DRIVER";
+
+
+    drowsyState.style.color =
+        "#f44336";
+
+
+    cameraPanel
+        .classList
+        .add("drowsy");
+
+
+    drowsyWarning
+        .classList
+        .add("active");
+
+
+    forwardBtn
+        .classList
+        .remove("active");
+
+
+    reverseBtn
+        .classList
+        .remove("active");
+
+
+    updateSpeed(0);
+
+}
+
+
+/* =================================================
+   NORMAL DRIVER UI
+================================================= */
+
+function clearDrowsyUI(){
+
+    drowsyState.textContent =
+        "DRIVER NORMAL";
+
+
+    drowsyState.style.color =
+        "#4caf50";
+
+
+    cameraPanel
+        .classList
+        .remove("drowsy");
+
+
+    drowsyWarning
+        .classList
+        .remove("active");
+
+
+    forwardBtn
+        .classList
+        .remove("active");
+
+
+    reverseBtn
+        .classList
+        .remove("active");
+
+
+    updateSpeed(0);
+
+}
+
+
+/* =================================================
+   EYE STATE PROCESSING
+================================================= */
+
+function processEyeState(
+    eyesClosed
+){
 
     if(
-        eyesClosed ||
-        drowsy
+        eyesClosed
     ){
 
-        drowsyWarning.classList.add(
-            "active"
-        );
+        eyeState.textContent =
+            "EYES: CLOSED";
+
+
+        if(
+            eyesClosedSince === 0
+        ){
+
+            eyesClosedSince =
+                Date.now();
+
+        }
+
+
+        const elapsed =
+            Date.now() -
+            eyesClosedSince;
+
+
+        /* =============================================
+           10 SECOND ALERT
+        ============================================= */
+
+        if(
+            elapsed >= EYE_ALERT_MS
+        ){
+
+            if(
+                drowsyPhase !== "ALERT"
+            ){
+
+                drowsyPhase =
+                    "ALERT";
+
+
+                setDrowsyUI();
+
+
+                sendCmd(
+                    "EYE:ALERT"
+                );
+
+
+                stopCarUI();
+
+            }
+
+
+            return;
+
+        }
+
+
+        /* =============================================
+           2 SECOND WARNING
+        ============================================= */
+
+        if(
+            elapsed >= EYE_WARN_MS
+        ){
+
+            if(
+                drowsyPhase === "NORMAL"
+            ){
+
+                drowsyPhase =
+                    "WARN";
+
+
+                setDrowsyUI();
+
+
+                sendCmd(
+                    "EYE:WARN"
+                );
+
+
+                stopCarUI();
+
+            }
+
+        }
 
     }else{
 
-        drowsyWarning.classList.remove(
-            "active"
-        );
-
-    }
-
-}
+        eyeState.textContent =
+            "EYES: OPEN";
 
 
-/* =====================================================
-   WATCH EYE STATUS
-===================================================== */
+        eyesClosedSince =
+            0;
 
-const drowsyObserver =
-new MutationObserver(
-    checkDrowsiness
-);
-
-
-if(eyeState){
-
-    drowsyObserver.observe(
-        eyeState,
-        {
-            childList:true,
-            characterData:true,
-            subtree:true
-        }
-    );
-
-}
-
-
-if(drowsyState){
-
-    drowsyObserver.observe(
-        drowsyState,
-        {
-            childList:true,
-            characterData:true,
-            subtree:true
-        }
-    );
-
-}
-
-
-/* =====================================================
-   INITIAL STATE
-===================================================== */
-
-updateSteering();
-
-updateCarSensors();
-
-checkDrowsiness();
-
-
-/* =====================================================
-   SAFETY: STOP VISUAL MOVEMENT
-   WHEN PAGE LOSES FOCUS
-===================================================== */
-
-window.addEventListener(
-    "blur",
-    function(){
-
-        stopCarVisual();
-
-    }
-);
-
-
-document.addEventListener(
-    "visibilitychange",
-    function(){
 
         if(
-            document.hidden
+            drowsyPhase !== "NORMAL"
         ){
 
-            stopCarVisual();
+            drowsyPhase =
+                "NORMAL";
+
+
+            clearDrowsyUI();
+
+
+            sendCmd(
+                "EYE:CLEAR"
+            );
 
         }
 
     }
+
+}
+
+
+/* =================================================
+   CAMERA BUTTON
+================================================= */
+
+const cameraButton =
+    document.getElementById(
+        "cameraButton"
+    );
+
+
+if(
+    cameraButton
+){
+
+    cameraButton.addEventListener(
+        "click",
+        function(){
+
+            if(
+                cameraRunning
+            ){
+
+                stopCamera();
+
+            }else{
+
+                startCamera();
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =================================================
+   BLE CONNECT BUTTON
+================================================= */
+
+const connectButton =
+    document.getElementById(
+        "connectBLE"
+    );
+
+
+if(
+    connectButton
+){
+
+    connectButton.addEventListener(
+        "click",
+        function(){
+
+            connectBLE();
+
+        }
+    );
+
+}
+
+
+/* =================================================
+   INITIAL STATE
+================================================= */
+
+updateSpeed(0);
+
+
+if(
+    drowsyState
+){
+
+    drowsyState.textContent =
+        "DRIVER NORMAL";
+
+
+    drowsyState.style.color =
+        "#4caf50";
+
+}
+
+
+if(
+    eyeState
+){
+
+    eyeState.textContent =
+        "EYES: --";
+
+}
+
+
+console.log(
+    "RC CAR DASHBOARD READY"
 );
 
+
 </script>
+
 
 </body>
 
