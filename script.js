@@ -1,203 +1,220 @@
-/* =========================================================
-   RC CAR CONTROLLER
-   PART 1 / 2
-   BLE + GPS + GSM + SMS + CAMERA + CONTROLS
-========================================================= */
+/* =====================================================
+   RC CAR DASHBOARD - script.js
+===================================================== */
 
 
-/* =========================================================
-   BLE UUIDs
-========================================================= */
+/* =====================================================
+   BLE CONFIGURATION
+===================================================== */
 
 const SERVICE_UUID =
-"4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+    "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 
 const CMD_CHAR_UUID =
-"beb5483e-36e1-4688-b7f5-ea07361b26a8";
+    "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 
 const TELE_CHAR_UUID =
-"beb5483e-36e1-4688-b7f5-ea07361b26a9";
-
-const MAX_ANGLE = 70;
+    "beb5483e-36e1-4688-b7f5-ea07361b26a9";
 
 
-/* =========================================================
-   ELEMENTS
-========================================================= */
-
-const app =
-document.getElementById("app");
-
-const statusEl =
-document.getElementById("status");
-
-const connectBtn =
-document.getElementById("connectBtn");
-
-const fwdBtn =
-document.getElementById("fwdBtn");
-
-const backBtn =
-document.getElementById("backBtn");
-
-const ecoBtn =
-document.getElementById("ecoBtn");
-
-const sportBtn =
-document.getElementById("sportBtn");
-
-const wheelWrap =
-document.getElementById("wheelWrap");
-
-const wheel =
-document.getElementById("wheel");
-
-const distFront =
-document.getElementById("distFront");
-
-const distRear =
-document.getElementById("distRear");
-
-const speedNum =
-document.getElementById("speedNum");
-
-const rpmNum =
-document.getElementById("rpmNum");
-
-const cameraVideo =
-document.getElementById("driverCamera");
-
-const cameraState =
-document.getElementById("cameraState");
-
-const cameraBtn =
-document.getElementById("cameraBtn");
-
-const switchCameraBtn =
-document.getElementById("switchCamera");
-
-
-/* =========================================================
+/* =====================================================
    BLE VARIABLES
-========================================================= */
+===================================================== */
 
 let bleDevice = null;
-
 let bleServer = null;
-
 let cmdChar = null;
-
 let teleChar = null;
 
 
-/* =========================================================
-   CAMERA VARIABLES
-========================================================= */
+/* =====================================================
+   DOM ELEMENTS
+===================================================== */
 
-let cameraStream = null;
+const bleStatus =
+    document.getElementById("bleStatus");
 
-let cameraMode = "user";
+const connectBtn =
+    document.getElementById("connectBLE");
 
-let cameraRunning = false;
+const forwardBtn =
+    document.getElementById("forwardBtn");
 
+const reverseBtn =
+    document.getElementById("reverseBtn");
 
-/* =========================================================
-   EYE DETECTION VARIABLES
-========================================================= */
+const leftBtn =
+    document.getElementById("leftBtn");
 
-let faceLandmarker = null;
+const rightBtn =
+    document.getElementById("rightBtn");
 
-let detectingEyes = false;
+const frontDistance =
+    document.getElementById("frontDistance");
 
-let eyesClosedSince = 0;
+const rearDistance =
+    document.getElementById("rearDistance");
 
-let drowsyWarningSent = false;
+const gpsStatus =
+    document.getElementById("gpsStatus");
 
-let drowsyAlertSent = false;
+const gpsCoords =
+    document.getElementById("gpsCoords");
 
+const gsmStatus =
+    document.getElementById("gsmStatus");
 
-/*
-   ESP32 timing:
+const smsStatus =
+    document.getElementById("smsStatus");
 
-   2 seconds  -> EYE:WARN
-   10 seconds -> EYE:ALERT
-*/
+const modeText =
+    document.getElementById("modeText");
 
-const EYE_WARN_TIME = 2000;
+const speedNum =
+    document.getElementById("speedNum");
 
-const EYE_ALERT_TIME = 10000;
+const rpmNum =
+    document.getElementById("rpmNum");
 
+const driverCamera =
+    document.getElementById("driverCamera");
 
-/*
-   Eye closure threshold.
-*/
+const cameraState =
+    document.getElementById("cameraState");
 
-const CLOSED_THRESHOLD = 0.20;
+const eyeState =
+    document.getElementById("eyeState");
 
+const drowsyState =
+    document.getElementById("drowsyState");
 
-/* =========================================================
-   EYE LANDMARKS
-========================================================= */
+const cameraPanel =
+    document.getElementById("cameraPanel");
 
-const LEFT_EYE = [
-    33,
-    160,
-    158,
-    133,
-    153,
-    144
-];
+const cameraBtn =
+    document.getElementById("cameraBtn");
 
-const RIGHT_EYE = [
-    362,
-    385,
-    387,
-    263,
-    373,
-    380
-];
+const obstacleWarning =
+    document.getElementById("obstacleWarning");
 
+const warningText =
+    document.getElementById("warningText");
 
-/* =========================================================
-   BLE CONNECT
-========================================================= */
-
-connectBtn.addEventListener(
-    "click",
-    connectBLE
-);
+const drowsyWarning =
+    document.getElementById("drowsyWarning");
 
 
-async function connectBLE(){
+/* =====================================================
+   CAR STATE
+===================================================== */
 
-    if(!navigator.bluetooth){
+let currentMode = "ECO";
 
-        statusEl.textContent =
-        "Web Bluetooth not supported";
+let frontCm = 999;
+let rearCm = 999;
+
+const OBSTACLE_LIMIT = 30;
+
+let obstacleStopping = false;
+
+
+/* =====================================================
+   SEND BLE COMMAND
+===================================================== */
+
+async function sendCmd(command) {
+
+    if (!cmdChar) {
+
+        console.log(
+            "BLE not connected:",
+            command
+        );
 
         return;
 
     }
 
+    try {
 
-    try{
+        const data =
+            new TextEncoder().encode(command);
 
-        statusEl.textContent =
-        "Searching for ESP32...";
+        if (
+            typeof cmdChar.writeValueWithoutResponse ===
+            "function"
+        ) {
+
+            await cmdChar.writeValueWithoutResponse(
+                data
+            );
+
+        } else {
+
+            await cmdChar.writeValue(
+                data
+            );
+
+        }
+
+        console.log(
+            "BLE →",
+            command
+        );
+
+    } catch (error) {
+
+        console.error(
+            "BLE SEND ERROR:",
+            error
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   BLE CONNECT
+===================================================== */
+
+async function connectBLE() {
+
+    if (!navigator.bluetooth) {
+
+        if (bleStatus) {
+
+            bleStatus.textContent =
+                "BLE NOT SUPPORTED";
+
+        }
+
+        return;
+
+    }
+
+    try {
+
+        if (bleStatus) {
+
+            bleStatus.textContent =
+                "REQUESTING DEVICE...";
+
+        }
 
 
         bleDevice =
-        await navigator.bluetooth.requestDevice({
+            await navigator.bluetooth.requestDevice({
 
-            filters:[
-                {
-                    services:[
-                        SERVICE_UUID
-                    ]
-                }
-            ]
+                filters: [
+                    {
+                        services: [
+                            SERVICE_UUID
+                        ]
+                    }
+                ]
 
-        });
+            });
 
 
         bleDevice.addEventListener(
@@ -206,36 +223,37 @@ async function connectBLE(){
         );
 
 
-        statusEl.textContent =
-        "Connecting...";
+        if (bleStatus) {
+
+            bleStatus.textContent =
+                "CONNECTING...";
+
+        }
 
 
         bleServer =
-        await bleDevice.gatt.connect();
+            await bleDevice.gatt.connect();
 
 
         const service =
-        await bleServer.getPrimaryService(
-            SERVICE_UUID
-        );
+            await bleServer.getPrimaryService(
+                SERVICE_UUID
+            );
 
 
         cmdChar =
-        await service.getCharacteristic(
-            CMD_CHAR_UUID
-        );
+            await service.getCharacteristic(
+                CMD_CHAR_UUID
+            );
 
 
-        teleChar =
-        await service.getCharacteristic(
-            TELE_CHAR_UUID
-        );
+        try {
 
+            teleChar =
+                await service.getCharacteristic(
+                    TELE_CHAR_UUID
+                );
 
-        if(
-            teleChar.properties.notify ||
-            teleChar.properties.indicate
-        ){
 
             await teleChar.startNotifications();
 
@@ -245,1290 +263,1390 @@ async function connectBLE(){
                 onTelemetry
             );
 
+
+        } catch (error) {
+
+            console.log(
+                "Telemetry characteristic unavailable"
+            );
+
         }
 
 
-        statusEl.textContent =
-        "Connected to " +
-        (
-            bleDevice.name ||
-            "ESP32"
+        if (bleStatus) {
+
+            bleStatus.textContent =
+                "BLE CONNECTED";
+
+            bleStatus.style.color =
+                "#4caf50";
+
+        }
+
+
+        await sendCmd(
+            "MODE:" + currentMode
         );
 
 
-        connectBtn.textContent =
-        "CONNECTED";
-
-
-        console.log(
-            "BLE CONNECTED"
-        );
-
-    }
-
-    catch(error){
+    } catch (error) {
 
         console.error(
-            "BLE ERROR:",
+            "BLE CONNECTION ERROR:",
             error
         );
 
 
-        statusEl.textContent =
-        "BLE Error: " +
-        error.message;
+        if (bleStatus) {
+
+            bleStatus.textContent =
+                "BLE CONNECTION ERROR";
+
+            bleStatus.style.color =
+                "#f44336";
+
+        }
 
     }
 
 }
 
 
-/* =========================================================
-   BLE DISCONNECT
-========================================================= */
+/* =====================================================
+   BLE DISCONNECTED
+===================================================== */
 
-function onDisconnected(){
-
-    statusEl.textContent =
-    "Disconnected";
-
-
-    connectBtn.textContent =
-    "Connect to Car";
-
+function onDisconnected() {
 
     cmdChar = null;
-
     teleChar = null;
 
 
-    stopDrive();
+    if (bleStatus) {
+
+        bleStatus.textContent =
+            "BLE DISCONNECTED";
+
+        bleStatus.style.color =
+            "#f44336";
+
+    }
+
+
+    stopCarUI();
 
 }
 
 
-/* =========================================================
-   SEND BLE COMMAND
-========================================================= */
-
-async function sendCmd(
-    command
-){
-
-    if(!cmdChar){
-
-        console.log(
-            "BLE not connected:",
-            command
-        );
-
-        return false;
-
-    }
-
-
-    try{
-
-        const data =
-        new TextEncoder().encode(
-            command
-        );
-
-
-        console.log(
-            "BLE SEND:",
-            command
-        );
-
-
-        if(
-            cmdChar.properties &&
-            cmdChar.properties.write
-        ){
-
-            await cmdChar.writeValue(
-                data
-            );
-
-        }
-
-        else if(
-            cmdChar.properties &&
-            cmdChar.properties.writeWithoutResponse
-        ){
-
-            await cmdChar.writeValueWithoutResponse(
-                data
-            );
-
-        }
-
-        else{
-
-            throw new Error(
-                "BLE characteristic is not writable"
-            );
-
-        }
-
-
-        return true;
-
-    }
-
-    catch(error){
-
-        console.error(
-            "BLE SEND ERROR:",
-            error
-        );
-
-        return false;
-
-    }
-
-}
-
-
-/* =========================================================
+/* =====================================================
    TELEMETRY
-========================================================= */
+===================================================== */
 
-function onTelemetry(
-    event
-){
+function onTelemetry(event) {
 
     const value =
-    new TextDecoder().decode(
-        event.target.value
-    );
+        new TextDecoder().decode(
+            event.target.value
+        );
 
 
     console.log(
-        "TELEMETRY:",
+        "ESP32 TELEMETRY:",
         value
     );
 
 
-    /*
-     * FRONT / REAR DISTANCE
-     *
-     * Example:
-     *
-     * F:50,R:80
-     */
+    /* -------------------------------------------------
+       FRONT DISTANCE
+    ------------------------------------------------- */
 
-    const distance =
-    value.match(
-        /F:(-?\d+),R:(-?\d+)/
-    );
-
-
-    if(distance){
-
-        distFront.textContent =
-        distance[1];
-
-
-        distRear.textContent =
-        distance[2];
-
-
-        updateCollision(
-            parseInt(
-                distance[1],
-                10
-            ),
-
-            parseInt(
-                distance[2],
-                10
-            )
-
+    const frontMatch =
+        value.match(
+            /F:(-?\d+)/
         );
+
+
+    if (frontMatch) {
+
+        frontCm =
+            Number(
+                frontMatch[1]
+            );
+
+
+        if (frontDistance) {
+
+            frontDistance.textContent =
+                frontCm + " cm";
+
+        }
 
     }
 
 
-    /*
-     * GPS
-     */
+    /* -------------------------------------------------
+       REAR DISTANCE
+    ------------------------------------------------- */
 
-    const gpsMatch =
-    value.match(
-        /GPS:(\d)/
-    );
-
-
-    const latMatch =
-    value.match(
-        /LAT:(-?\d+\.\d+)/
-    );
-
-
-    const lonMatch =
-    value.match(
-        /LON:(-?\d+\.\d+)/
-    );
-
-
-    const gpsDot =
-    document.getElementById(
-        "gpsDot"
-    );
-
-
-    const coords =
-    document.getElementById(
-        "coords"
-    );
-
-
-    if(
-        gpsMatch &&
-        gpsDot
-    ){
-
-        const hasFix =
-        gpsMatch[1] === "1";
-
-
-        gpsDot.className =
-        "dot " +
-        (
-            hasFix
-            ? "ok"
-            : "bad"
+    const rearMatch =
+        value.match(
+            /R:(-?\d+)/
         );
 
 
-        if(
-            hasFix &&
-            latMatch &&
-            lonMatch &&
-            coords
-        ){
+    if (rearMatch) {
 
-            coords.textContent =
+        rearCm =
+            Number(
+                rearMatch[1]
+            );
+
+
+        if (rearDistance) {
+
+            rearDistance.textContent =
+                rearCm + " cm";
+
+        }
+
+    }
+
+
+    /* -------------------------------------------------
+       GPS
+    ------------------------------------------------- */
+
+    const gpsMatch =
+        value.match(
+            /GPS:(\d)/
+        );
+
+
+    if (gpsMatch && gpsStatus) {
+
+        const connected =
+            gpsMatch[1] === "1";
+
+
+        gpsStatus.textContent =
+            connected
+                ? "GPS CONNECTED"
+                : "GPS NOT CONNECTED";
+
+
+        gpsStatus.style.color =
+            connected
+                ? "#4caf50"
+                : "#f44336";
+
+    }
+
+
+    /* -------------------------------------------------
+       LATITUDE
+    ------------------------------------------------- */
+
+    const latMatch =
+        value.match(
+            /LAT:([-0-9.]+)/
+        );
+
+
+    /* -------------------------------------------------
+       LONGITUDE
+    ------------------------------------------------- */
+
+    const lonMatch =
+        value.match(
+            /LON:([-0-9.]+)/
+        );
+
+
+    if (
+        latMatch &&
+        lonMatch &&
+        gpsCoords
+    ) {
+
+        gpsCoords.textContent =
             latMatch[1] +
             ", " +
             lonMatch[1];
 
-        }
-
-        else if(coords){
-
-            coords.textContent =
-            "no GPS fix";
-
-        }
-
     }
 
 
-    /*
-     * GSM
-     */
+    /* -------------------------------------------------
+       GSM
+    ------------------------------------------------- */
 
     const gsmMatch =
-    value.match(
-        /GSM:(\d)/
-    );
-
-
-    const gsmDot =
-    document.getElementById(
-        "gsmDot"
-    );
-
-
-    if(
-        gsmMatch &&
-        gsmDot
-    ){
-
-        gsmDot.className =
-        "dot " +
-        (
-            gsmMatch[1] === "1"
-            ? "ok"
-            : "bad"
+        value.match(
+            /GSM:(\d)/
         );
+
+
+    if (
+        gsmMatch &&
+        gsmStatus
+    ) {
+
+        const connected =
+            gsmMatch[1] === "1";
+
+
+        gsmStatus.textContent =
+            connected
+                ? "GSM CONNECTED"
+                : "GSM NOT CONNECTED";
+
+
+        gsmStatus.style.color =
+            connected
+                ? "#4caf50"
+                : "#f44336";
 
     }
 
 
-    /*
-     * SMS
-     */
+    /* -------------------------------------------------
+       SMS
+    ------------------------------------------------- */
 
     const smsMatch =
-    value.match(
-        /SMS:(\d)/
-    );
+        value.match(
+            /SMS:(\d)/
+        );
 
 
-    const smsDot =
-    document.getElementById(
-        "smsDot"
-    );
-
-
-    if(
+    if (
         smsMatch &&
-        smsDot
-    ){
+        smsStatus
+    ) {
 
-        if(
-            smsMatch[1] === "1"
-        ){
-
-            smsDot.className =
-            "dot ok";
-
-        }
-
-        else if(
-            smsMatch[1] === "2"
-        ){
-
-            smsDot.className =
-            "dot bad";
-
-        }
-
-        else{
-
-            smsDot.className =
-            "dot";
-
-        }
+        smsStatus.textContent =
+            "SMS STATUS: " +
+            smsMatch[1];
 
     }
+
+
+    checkObstacle();
 
 }
 
 
-/* =========================================================
-   COLLISION DISPLAY
-========================================================= */
+/* =====================================================
+   OBSTACLE SAFETY
+===================================================== */
 
-function updateCollision(
-    front,
-    rear
-){
+function checkObstacle() {
 
-    const overlay =
-    document.getElementById(
-        "collisionOverlay"
-    );
+    /* -------------------------------------------------
+       FRONT
+    ------------------------------------------------- */
 
+    if (
+        forwardBtn &&
+        forwardBtn.classList.contains("active") &&
+        frontCm <= OBSTACLE_LIMIT
+    ) {
 
-    const icon =
-    document.getElementById(
-        "collisionIcon"
-    );
+        obstacleStopping = true;
 
 
-    if(
-        !overlay ||
-        !icon
-    ){
+        if (warningText) {
+
+            warningText.textContent =
+                "FRONT OBSTACLE: " +
+                frontCm +
+                " CM";
+
+        }
+
+
+        if (obstacleWarning) {
+
+            obstacleWarning.classList.add(
+                "active"
+            );
+
+        }
+
+
+        forwardBtn.classList.remove(
+            "active"
+        );
+
+
+        sendCmd("S");
+
+        updateSpeed(0);
 
         return;
 
     }
 
 
-    const safeDistance =
-    app.classList.contains(
-        "sport"
-    )
-    ? 38
-    : 20;
+    /* -------------------------------------------------
+       REAR
+    ------------------------------------------------- */
+
+    if (
+        reverseBtn &&
+        reverseBtn.classList.contains("active") &&
+        rearCm <= OBSTACLE_LIMIT
+    ) {
+
+        obstacleStopping = true;
 
 
-    const tooClose =
-    (
-        front > 0 &&
-        front < safeDistance
-    )
-    ||
-    (
-        rear > 0 &&
-        rear < safeDistance
-    );
+        if (warningText) {
+
+            warningText.textContent =
+                "REAR OBSTACLE: " +
+                rearCm +
+                " CM";
+
+        }
 
 
-    overlay.classList.toggle(
-        "active",
-        tooClose
-    );
+        if (obstacleWarning) {
 
-
-    icon.classList.toggle(
-        "active",
-        tooClose
-    );
-
-}
-
-
-/* =========================================================
-   GPS BUTTON
-========================================================= */
-
-const gpsReqBtn =
-document.getElementById(
-    "gpsReqBtn"
-);
-
-
-if(gpsReqBtn){
-
-    gpsReqBtn.addEventListener(
-        "click",
-        () => {
-
-            sendCmd(
-                "GPS?"
-            );
-
-
-            gpsReqBtn.style.opacity =
-            "0.5";
-
-
-            setTimeout(
-                () => {
-
-                    gpsReqBtn.style.opacity =
-                    "1";
-
-                },
-                800
+            obstacleWarning.classList.add(
+                "active"
             );
 
         }
-    );
-
-}
 
 
-/* =========================================================
-   SMS
-========================================================= */
-
-const smsBtn =
-document.getElementById(
-    "smsBtn"
-);
-
-const msgPanel =
-document.getElementById(
-    "msgPanel"
-);
-
-const msgInput =
-document.getElementById(
-    "msgInput"
-);
-
-const msgSendBtn =
-document.getElementById(
-    "msgSendBtn"
-);
-
-const msgStatus =
-document.getElementById(
-    "msgStatus"
-);
-
-
-if(smsBtn){
-
-    smsBtn.addEventListener(
-        "click",
-        () => {
-
-            if(msgPanel){
-
-                msgPanel.classList.toggle(
-                    "open"
-                );
-
-            }
-
-        }
-    );
-
-}
-
-
-if(msgSendBtn){
-
-    msgSendBtn.addEventListener(
-        "click",
-        async () => {
-
-            if(!msgInput)
-                return;
-
-
-            const text =
-            msgInput.value.trim();
-
-
-            if(!text){
-
-                if(msgStatus){
-
-                    msgStatus.textContent =
-                    "Enter a message";
-
-                }
-
-                return;
-
-            }
-
-
-            if(!cmdChar){
-
-                if(msgStatus){
-
-                    msgStatus.textContent =
-                    "Connect to Car first";
-
-                }
-
-                return;
-
-            }
-
-
-            if(msgStatus){
-
-                msgStatus.textContent =
-                "Sending...";
-
-            }
-
-
-            const sent =
-            await sendCmd(
-                "MSG:" + text
-            );
-
-
-            if(sent){
-
-                if(msgStatus){
-
-                    msgStatus.textContent =
-                    "SMS command sent";
-
-                }
-
-
-                msgInput.value =
-                "";
-
-            }
-
-            else{
-
-                if(msgStatus){
-
-                    msgStatus.textContent =
-                    "Send failed";
-
-                }
-
-            }
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   ECO MODE
-========================================================= */
-
-ecoBtn.addEventListener(
-    "click",
-    () => {
-
-        app.classList.remove(
-            "sport"
-        );
-
-
-        ecoBtn.classList.add(
+        reverseBtn.classList.remove(
             "active"
         );
 
 
-        sportBtn.classList.remove(
-            "active"
-        );
+        sendCmd("S");
 
-
-        sendCmd(
-            "MODE:ECO"
-        );
-
-
-        console.log(
-            "ECO MODE"
-        );
-
-    }
-);
-
-
-/* =========================================================
-   SPORT MODE
-========================================================= */
-
-sportBtn.addEventListener(
-    "click",
-    () => {
-
-        app.classList.add(
-            "sport"
-        );
-
-
-        sportBtn.classList.add(
-            "active"
-        );
-
-
-        ecoBtn.classList.remove(
-            "active"
-        );
-
-
-        sendCmd(
-            "MODE:SPORT"
-        );
-
-
-        console.log(
-            "SPORT MODE"
-        );
-
-    }
-);
-
-
-/* =========================================================
-   SPEED / RPM
-========================================================= */
-
-const MAX_SPEED =
-120;
-
-const MAX_RPM =
-8000;
-
-let currentSpeed =
-0;
-
-let targetSpeed =
-0;
-
-
-function setTargetSpeed(
-    moving
-){
-
-    if(!moving){
-
-        targetSpeed =
-        0;
+        updateSpeed(0);
 
         return;
 
     }
 
 
-    if(
-        app.classList.contains(
-            "sport"
-        )
-    ){
+    obstacleStopping = false;
 
-        targetSpeed =
-        MAX_SPEED;
 
-    }
+    if (obstacleWarning) {
 
-    else{
-
-        targetSpeed =
-        MAX_SPEED *
-        0.55;
+        obstacleWarning.classList.remove(
+            "active"
+        );
 
     }
 
 }
 
 
-function updateGauge(){
+/* =====================================================
+   STOP CAR
+===================================================== */
 
-    currentSpeed +=
-    (
-        targetSpeed -
-        currentSpeed
-    ) * 0.08;
+function stopCarUI() {
 
+    if (forwardBtn) {
 
-    if(
-        Math.abs(
-            targetSpeed -
-            currentSpeed
-        ) < 0.2
-    ){
-
-        currentSpeed =
-        targetSpeed;
-
-    }
-
-
-    if(speedNum){
-
-        speedNum.textContent =
-        Math.round(
-            currentSpeed
+        forwardBtn.classList.remove(
+            "active"
         );
 
     }
 
 
-    if(rpmNum){
+    if (reverseBtn) {
 
-        rpmNum.textContent =
-        Math.round(
-            (
-                currentSpeed /
-                MAX_SPEED
-            ) *
-            MAX_RPM
+        reverseBtn.classList.remove(
+            "active"
         );
 
     }
 
 
-    requestAnimationFrame(
-        updateGauge
-    );
+    sendCmd("S");
+
+    updateSpeed(0);
 
 }
 
 
-updateGauge();
+/* =====================================================
+   FORWARD
+===================================================== */
 
+function startForward() {
 
-/* =========================================================
-   DRIVE START
-========================================================= */
+    if (
+        typeof drowsyPhase !== "undefined" &&
+        drowsyPhase !== "NORMAL"
+    ) {
 
-function startDrive(
-    button,
-    command
-){
-
-    if(!button)
         return;
 
+    }
 
-    if(command === "F"){
 
-        backBtn.classList.remove(
+    if (
+        frontCm <= OBSTACLE_LIMIT
+    ) {
+
+        obstacleStopping = true;
+
+
+        if (warningText) {
+
+            warningText.textContent =
+                "FRONT OBSTACLE: " +
+                frontCm +
+                " CM";
+
+        }
+
+
+        if (obstacleWarning) {
+
+            obstacleWarning.classList.add(
+                "active"
+            );
+
+        }
+
+
+        sendCmd("S");
+
+        return;
+
+    }
+
+
+    obstacleStopping = false;
+
+
+    if (obstacleWarning) {
+
+        obstacleWarning.classList.remove(
             "active"
         );
 
     }
 
 
-    if(command === "B"){
-
-        fwdBtn.classList.remove(
-            "active"
-        );
-
-    }
-
-
-    button.classList.add(
+    forwardBtn.classList.add(
         "active"
     );
 
 
-    sendCmd(
-        command
+    reverseBtn.classList.remove(
+        "active"
     );
 
 
-    setTargetSpeed(
-        true
-    );
-
-}
+    sendCmd("F");
 
 
-/* =========================================================
-   DRIVE STOP
-========================================================= */
-
-function stopDrive(){
-
-    if(fwdBtn){
-
-        fwdBtn.classList.remove(
-            "active"
-        );
-
-    }
-
-
-    if(backBtn){
-
-        backBtn.classList.remove(
-            "active"
-        );
-
-    }
-
-
-    sendCmd(
-        "S"
-    );
-
-
-    setTargetSpeed(
-        false
+    updateSpeed(
+        currentMode === "SPORT"
+            ? 25
+            : 15
     );
 
 }
 
 
-/* =========================================================
-   DRIVE BUTTON SETUP
-========================================================= */
+/* =====================================================
+   BACKWARD
+===================================================== */
 
-function setupDriveButton(
-    button,
-    command
-){
+function startReverse() {
 
-    if(!button)
+    if (
+        typeof drowsyPhase !== "undefined" &&
+        drowsyPhase !== "NORMAL"
+    ) {
+
         return;
 
+    }
 
-    button.addEventListener(
+
+    if (
+        rearCm <= OBSTACLE_LIMIT
+    ) {
+
+        obstacleStopping = true;
+
+
+        if (warningText) {
+
+            warningText.textContent =
+                "REAR OBSTACLE: " +
+                rearCm +
+                " CM";
+
+        }
+
+
+        if (obstacleWarning) {
+
+            obstacleWarning.classList.add(
+                "active"
+            );
+
+        }
+
+
+        sendCmd("S");
+
+        return;
+
+    }
+
+
+    obstacleStopping = false;
+
+
+    if (obstacleWarning) {
+
+        obstacleWarning.classList.remove(
+            "active"
+        );
+
+    }
+
+
+    reverseBtn.classList.add(
+        "active"
+    );
+
+
+    forwardBtn.classList.remove(
+        "active"
+    );
+
+
+    sendCmd("B");
+
+
+    updateSpeed(
+        currentMode === "SPORT"
+            ? 22
+            : 13
+    );
+
+}
+
+
+/* =====================================================
+   DRIVE BUTTONS
+===================================================== */
+
+if (forwardBtn) {
+
+    forwardBtn.addEventListener(
         "pointerdown",
-        event => {
+        startForward
+    );
 
-            event.preventDefault();
+
+    forwardBtn.addEventListener(
+        "pointerup",
+        stopCarUI
+    );
 
 
-            startDrive(
-                button,
-                command
+    forwardBtn.addEventListener(
+        "pointercancel",
+        stopCarUI
+    );
+
+}
+
+
+if (reverseBtn) {
+
+    reverseBtn.addEventListener(
+        "pointerdown",
+        startReverse
+    );
+
+
+    reverseBtn.addEventListener(
+        "pointerup",
+        stopCarUI
+    );
+
+
+    reverseBtn.addEventListener(
+        "pointercancel",
+        stopCarUI
+    );
+
+}
+
+
+/* =====================================================
+   STEERING LEFT
+===================================================== */
+
+if (leftBtn) {
+
+    leftBtn.addEventListener(
+        "pointerdown",
+        function () {
+
+            if (
+                typeof drowsyPhase !== "undefined" &&
+                drowsyPhase !== "NORMAL"
+            ) {
+
+                return;
+
+            }
+
+
+            leftBtn.classList.add(
+                "active"
+            );
+
+
+            rightBtn.classList.remove(
+                "active"
+            );
+
+
+            sendCmd(
+                "L:-70"
             );
 
         }
     );
 
 
-    button.addEventListener(
+    leftBtn.addEventListener(
         "pointerup",
-        event => {
+        function () {
 
-            event.preventDefault();
+            leftBtn.classList.remove(
+                "active"
+            );
 
 
-            stopDrive();
+            sendCmd(
+                "L:0"
+            );
 
         }
     );
 
 
-    button.addEventListener(
+    leftBtn.addEventListener(
         "pointercancel",
-        stopDrive
+        function () {
+
+            leftBtn.classList.remove(
+                "active"
+            );
+
+
+            sendCmd(
+                "L:0"
+            );
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   STEERING RIGHT
+===================================================== */
+
+if (rightBtn) {
+
+    rightBtn.addEventListener(
+        "pointerdown",
+        function () {
+
+            if (
+                typeof drowsyPhase !== "undefined" &&
+                drowsyPhase !== "NORMAL"
+            ) {
+
+                return;
+
+            }
+
+
+            rightBtn.classList.add(
+                "active"
+            );
+
+
+            leftBtn.classList.remove(
+                "active"
+            );
+
+
+            sendCmd(
+                "L:70"
+            );
+
+        }
     );
 
 
-    button.addEventListener(
-        "pointerleave",
-        event => {
+    rightBtn.addEventListener(
+        "pointerup",
+        function () {
 
-            if(event.buttons){
+            rightBtn.classList.remove(
+                "active"
+            );
 
-                stopDrive();
+
+            sendCmd(
+                "L:0"
+            );
+
+        }
+    );
+
+
+    rightBtn.addEventListener(
+        "pointercancel",
+        function () {
+
+            rightBtn.classList.remove(
+                "active"
+            );
+
+
+            sendCmd(
+                "L:0"
+            );
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   SPEED / RPM
+===================================================== */
+
+function updateSpeed(speed) {
+
+    if (speedNum) {
+
+        speedNum.textContent =
+            Math.round(speed);
+
+    }
+
+
+    if (rpmNum) {
+
+        rpmNum.textContent =
+            Math.round(
+                speed * 140
+            );
+
+    }
+
+}
+
+
+/* =====================================================
+   MODE
+===================================================== */
+
+function setMode(mode) {
+
+    currentMode =
+        mode;
+
+
+    sendCmd(
+        "MODE:" + mode
+    );
+
+
+    if (modeText) {
+
+        modeText.textContent =
+            mode;
+
+    }
+
+
+    if (
+        forwardBtn &&
+        reverseBtn
+    ) {
+
+        if (
+            mode === "SPORT"
+        ) {
+
+            forwardBtn.classList.add(
+                "sport"
+            );
+
+            reverseBtn.classList.add(
+                "sport"
+            );
+
+        } else {
+
+            forwardBtn.classList.remove(
+                "sport"
+            );
+
+            reverseBtn.classList.remove(
+                "sport"
+            );
+
+        }
+
+    }
+
+}
+
+
+/* =====================================================
+   GPS REQUEST
+===================================================== */
+
+function requestGPS() {
+
+    sendCmd(
+        "GPS?"
+    );
+
+}
+
+
+/* =====================================================
+   SMS
+===================================================== */
+
+function sendSMS(message) {
+
+    if (!message) {
+
+        return;
+
+    }
+
+
+    sendCmd(
+        "MSG:" + message
+    );
+
+}
+
+
+/* =====================================================
+   DROWSINESS UI
+===================================================== */
+
+function setDrowsyUI() {
+
+    if (drowsyState) {
+
+        drowsyState.textContent =
+            "SLEEPY DRIVER";
+
+
+        drowsyState.style.color =
+            "#f44336";
+
+    }
+
+
+    if (cameraPanel) {
+
+        cameraPanel.classList.add(
+            "drowsy"
+        );
+
+    }
+
+
+    if (drowsyWarning) {
+
+        drowsyWarning.classList.add(
+            "active"
+        );
+
+    }
+
+
+    if (forwardBtn) {
+
+        forwardBtn.classList.remove(
+            "active"
+        );
+
+    }
+
+
+    if (reverseBtn) {
+
+        reverseBtn.classList.remove(
+            "active"
+        );
+
+    }
+
+
+    updateSpeed(0);
+
+}
+
+
+/* =====================================================
+   NORMAL DRIVER UI
+===================================================== */
+
+function clearDrowsyUI() {
+
+    if (drowsyState) {
+
+        drowsyState.textContent =
+            "DRIVER NORMAL";
+
+
+        drowsyState.style.color =
+            "#4caf50";
+
+    }
+
+
+    if (cameraPanel) {
+
+        cameraPanel.classList.remove(
+            "drowsy"
+        );
+
+    }
+
+
+    if (drowsyWarning) {
+
+        drowsyWarning.classList.remove(
+            "active"
+        );
+
+    }
+
+
+    if (forwardBtn) {
+
+        forwardBtn.classList.remove(
+            "active"
+        );
+
+    }
+
+
+    if (reverseBtn) {
+
+        reverseBtn.classList.remove(
+            "active"
+        );
+
+    }
+
+
+    updateSpeed(0);
+
+}
+/* =====================================================
+   DROWSINESS VARIABLES
+===================================================== */
+
+let eyesClosedSince = 0;
+
+let drowsyPhase = "NORMAL";
+
+const EYE_WARN_MS = 2000;
+
+const EYE_ALERT_MS = 10000;
+
+
+/* =====================================================
+   PROCESS EYE STATE
+===================================================== */
+
+function processEyeState(eyesClosed) {
+
+    if (eyesClosed) {
+
+        if (eyeState) {
+            eyeState.textContent =
+                "EYES: CLOSED";
+        }
+
+
+        if (eyesClosedSince === 0) {
+
+            eyesClosedSince =
+                Date.now();
+
+        }
+
+
+        const elapsed =
+            Date.now() -
+            eyesClosedSince;
+
+
+        /* =============================================
+           SLEEPY WARNING - 2 SECONDS
+        ============================================= */
+
+        if (
+            elapsed >= EYE_WARN_MS &&
+            elapsed < EYE_ALERT_MS
+        ) {
+
+            if (
+                drowsyPhase === "NORMAL"
+            ) {
+
+                drowsyPhase =
+                    "WARN";
+
+
+                setDrowsyUI();
+
+
+                sendCmd(
+                    "EYE:WARN"
+                );
+
+
+                stopCarUI();
 
             }
 
         }
-    );
+
+
+        /* =============================================
+           SLEEPY ALERT - 10 SECONDS
+        ============================================= */
+
+        if (
+            elapsed >= EYE_ALERT_MS
+        ) {
+
+            if (
+                drowsyPhase !== "ALERT"
+            ) {
+
+                drowsyPhase =
+                    "ALERT";
+
+
+                setDrowsyUI();
+
+
+                sendCmd(
+                    "EYE:ALERT"
+                );
+
+
+                stopCarUI();
+
+            }
+
+        }
+
+
+    } else {
+
+        if (eyeState) {
+
+            eyeState.textContent =
+                "EYES: OPEN";
+
+        }
+
+
+        eyesClosedSince =
+            0;
+
+
+        /* =============================================
+           DRIVER NORMAL AGAIN
+        ============================================= */
+
+        if (
+            drowsyPhase !== "NORMAL"
+        ) {
+
+            drowsyPhase =
+                "NORMAL";
+
+
+            clearDrowsyUI();
+
+
+            sendCmd(
+                "EYE:CLEAR"
+            );
+
+        }
+
+    }
 
 }
 
 
-setupDriveButton(
-    fwdBtn,
-    "F"
-);
+/* =====================================================
+   DROWSY DRIVER UI
+===================================================== */
+
+function setDrowsyUI() {
+
+    if (drowsyState) {
+
+        drowsyState.textContent =
+            "SLEEPY DRIVER";
 
 
-setupDriveButton(
-    backBtn,
-    "B"
-);
-
-
-/* =========================================================
-   STEERING
-========================================================= */
-
-let steeringActive =
-false;
-
-let lastSteeringSend =
-0;
-
-
-function getSteeringAngle(
-    event
-){
-
-    const rect =
-    wheelWrap.getBoundingClientRect();
-
-
-    const cx =
-    rect.left +
-    rect.width /
-    2;
-
-
-    const cy =
-    rect.top +
-    rect.height /
-    2;
-
-
-    const dx =
-    event.clientX -
-    cx;
-
-
-    const dy =
-    event.clientY -
-    cy;
-
-
-    let angle =
-    Math.atan2(
-        dx,
-        -dy
-    )
-    *
-    180 /
-    Math.PI;
-
-
-    angle =
-    Math.max(
-        -MAX_ANGLE,
-
-        Math.min(
-            MAX_ANGLE,
-            angle
-        )
-    );
-
-
-    return angle;
-
-}
-
-
-/* =========================================================
-   SEND STEERING
-========================================================= */
-
-function sendSteering(
-    angle
-){
-
-    const now =
-    Date.now();
-
-
-    if(
-        now -
-        lastSteeringSend <
-        40
-    ){
-
-        return;
+        drowsyState.style.color =
+            "#f44336";
 
     }
 
 
-    lastSteeringSend =
-    now;
+    if (cameraPanel) {
+
+        cameraPanel.classList.add(
+            "drowsy"
+        );
+
+    }
 
 
-    sendCmd(
-        "L:" +
-        Math.round(
-            angle
-        )
-    );
+    if (drowsyWarning) {
+
+        drowsyWarning.classList.add(
+            "active"
+        );
+
+    }
+
+
+    /* ---------------------------------------------
+       STOP DRIVE BUTTONS
+    --------------------------------------------- */
+
+    if (forwardBtn) {
+
+        forwardBtn.classList.remove(
+            "active"
+        );
+
+    }
+
+
+    if (reverseBtn) {
+
+        reverseBtn.classList.remove(
+            "active"
+        );
+
+    }
+
+
+    /* ---------------------------------------------
+       STOP SPEED / RPM DISPLAY
+    --------------------------------------------- */
+
+    updateSpeed(0);
 
 }
 
 
-/* =========================================================
-   STEERING DOWN
-========================================================= */
+/* =====================================================
+   DRIVER NORMAL UI
+===================================================== */
 
-wheelWrap.addEventListener(
-    "pointerdown",
-    event => {
+function clearDrowsyUI() {
 
-        event.preventDefault();
+    if (drowsyState) {
 
-
-        steeringActive =
-        true;
+        drowsyState.textContent =
+            "DRIVER NORMAL";
 
 
-        wheelWrap.setPointerCapture(
-            event.pointerId
-        );
+        drowsyState.style.color =
+            "#4caf50";
+
+    }
 
 
-        const angle =
-        getSteeringAngle(
-            event
-        );
+    if (cameraPanel) {
 
-
-        wheel.style.transition =
-        "none";
-
-
-        wheel.style.transform =
-        `rotate(${angle}deg)`;
-
-
-        sendSteering(
-            angle
+        cameraPanel.classList.remove(
+            "drowsy"
         );
 
     }
-);
 
 
-/* =========================================================
-   STEERING MOVE
-========================================================= */
+    if (drowsyWarning) {
 
-wheelWrap.addEventListener(
-    "pointermove",
-    event => {
+        drowsyWarning.classList.remove(
+            "active"
+        );
 
-        if(!steeringActive)
+    }
+
+
+    if (forwardBtn) {
+
+        forwardBtn.classList.remove(
+            "active"
+        );
+
+    }
+
+
+    if (reverseBtn) {
+
+        reverseBtn.classList.remove(
+            "active"
+        );
+
+    }
+
+
+    updateSpeed(0);
+
+}
+
+
+/* =====================================================
+   CAMERA VARIABLES
+===================================================== */
+
+let cameraStream = null;
+
+let cameraRunning = false;
+
+let faceMesh = null;
+
+
+/* =====================================================
+   START CAMERA
+===================================================== */
+
+async function startCamera() {
+
+    try {
+
+        if (
+            !navigator.mediaDevices ||
+            !navigator.mediaDevices.getUserMedia
+        ) {
+
+            if (cameraState) {
+
+                cameraState.textContent =
+                    "CAMERA NOT SUPPORTED";
+
+                cameraState.style.color =
+                    "#f44336";
+
+            }
+
             return;
 
-
-        event.preventDefault();
-
-
-        const angle =
-        getSteeringAngle(
-            event
-        );
-
-
-        wheel.style.transform =
-        `rotate(${angle}deg)`;
-
-
-        sendSteering(
-            angle
-        );
-
-    }
-);
-
-
-/* =========================================================
-   STEERING RELEASE
-========================================================= */
-
-function releaseSteering(){
-
-    if(!steeringActive)
-        return;
-
-
-    steeringActive =
-    false;
-
-
-    wheel.style.transition =
-    "transform .2s ease";
-
-
-    wheel.style.transform =
-    "rotate(0deg)";
-
-
-    sendCmd(
-        "L:0"
-    );
-
-}
-
-
-wheelWrap.addEventListener(
-    "pointerup",
-    releaseSteering
-);
-
-
-wheelWrap.addEventListener(
-    "pointercancel",
-    releaseSteering
-);
-
-
-/* =========================================================
-   CAMERA BUTTON
-========================================================= */
-
-cameraBtn.addEventListener(
-    "click",
-    async () => {
-
-        if(cameraRunning){
-
-            stopCamera();
-
         }
 
-        else{
 
-            await startCamera();
+        if (cameraState) {
 
-        }
+            cameraState.textContent =
+                "STARTING CAMERA...";
 
-    }
-);
-
-/* =========================================================
-   START CAMERA
-========================================================= */
-
-async function startCamera(){
-
-    if(
-        !navigator.mediaDevices ||
-        !navigator.mediaDevices.getUserMedia
-    ){
-
-        cameraState.textContent =
-        "CAMERA NOT SUPPORTED";
-
-        return;
-    }
-
-
-    try{
-
-        cameraState.textContent =
-        "STARTING CAMERA...";
-
-
-        if(cameraStream){
-
-            cameraStream
-            .getTracks()
-            .forEach(
-                track =>
-                track.stop()
-            );
+            cameraState.style.color =
+                "#ffffff";
 
         }
 
 
         cameraStream =
-        await navigator.mediaDevices.getUserMedia({
+            await navigator
+                .mediaDevices
+                .getUserMedia({
 
-            video:{
+                    video: {
 
-                facingMode:{
-                    ideal:
-                    cameraMode
-                },
+                        facingMode:
+                            "user",
 
-                width:{
-                    ideal:640
-                },
+                        width: {
+                            ideal: 640
+                        },
 
-                height:{
-                    ideal:480
-                }
+                        height: {
+                            ideal: 480
+                        }
 
-            },
+                    },
 
-            audio:false
+                    audio: false
 
-        });
-
-
-        cameraVideo.srcObject =
-        cameraStream;
+                });
 
 
-        await cameraVideo.play();
+        if (driverCamera) {
+
+            driverCamera.srcObject =
+                cameraStream;
+
+
+            await driverCamera.play();
+
+        }
 
 
         cameraRunning =
-        true;
+            true;
 
 
-        cameraBtn.textContent =
-        "STOP CAMERA";
+        if (cameraState) {
+
+            cameraState.textContent =
+                "CAMERA ACTIVE";
+
+            cameraState.style.color =
+                "#4caf50";
+
+        }
 
 
-        cameraState.textContent =
-        cameraMode === "user"
-        ? "FRONT CAMERA"
-        : "BACK CAMERA";
+        setupFaceMesh();
 
 
-        await initializeEyeDetection();
-
-
-        console.log(
-            "CAMERA STARTED"
-        );
-
-    }
-
-    catch(error){
+    } catch (error) {
 
         console.error(
             "CAMERA ERROR:",
@@ -1536,62 +1654,13 @@ async function startCamera(){
         );
 
 
-        cameraStream =
-        null;
+        if (cameraState) {
 
-        cameraRunning =
-        false;
+            cameraState.textContent =
+                "CAMERA ERROR";
 
-
-        cameraState.textContent =
-        "CAMERA ERROR";
-
-
-        const eyeState =
-        document.getElementById(
-            "eyeState"
-        );
-
-
-        if(eyeState){
-
-            if(
-                error.name ===
-                "NotAllowedError"
-            ){
-
-                eyeState.textContent =
-                "CAMERA PERMISSION BLOCKED";
-
-            }
-
-            else if(
-                error.name ===
-                "NotFoundError"
-            ){
-
-                eyeState.textContent =
-                "NO CAMERA FOUND";
-
-            }
-
-            else if(
-                error.name ===
-                "NotReadableError"
-            ){
-
-                eyeState.textContent =
-                "CAMERA BUSY";
-
-            }
-
-            else{
-
-                eyeState.textContent =
-                error.name ||
-                "CHECK CAMERA";
-
-            }
+            cameraState.style.color =
+                "#f44336";
 
         }
 
@@ -1600,471 +1669,281 @@ async function startCamera(){
 }
 
 
-/* =========================================================
+/* =====================================================
    STOP CAMERA
-========================================================= */
+===================================================== */
 
-function stopCamera(){
-
-    stopEyeDetection();
-
-
-    if(cameraStream){
-
-        cameraStream
-        .getTracks()
-        .forEach(
-            track =>
-            track.stop()
-        );
-
-    }
-
-
-    cameraStream =
-    null;
-
-
-    cameraVideo.srcObject =
-    null;
-
+function stopCamera() {
 
     cameraRunning =
-    false;
-
-
-    cameraState.textContent =
-    "CAMERA OFF";
-
-
-    cameraBtn.textContent =
-    "START CAMERA";
-
-
-    const eyeState =
-    document.getElementById(
-        "eyeState"
-    );
-
-
-    const drowsyState =
-    document.getElementById(
-        "drowsyState"
-    );
-
-
-    if(eyeState){
-
-        eyeState.textContent =
-        "EYES: --";
-
-    }
-
-
-    if(drowsyState){
-
-        drowsyState.textContent =
-        "DROWSINESS: NORMAL";
-
-    }
-
-}
-
-
-/* =========================================================
-   SWITCH CAMERA
-========================================================= */
-
-switchCameraBtn.addEventListener(
-    "click",
-    async () => {
-
-        cameraMode =
-        cameraMode === "user"
-        ? "environment"
-        : "user";
-
-
-        if(cameraRunning){
-
-            await startCamera();
-
-        }
-
-    }
-);
-
-
-/* =========================================================
-   EYE DETECTION
-========================================================= */
-
-async function initializeEyeDetection(){
-
-    if(faceLandmarker){
-
-        startEyeDetectionLoop();
-
-        return;
-
-    }
-
-
-    try{
-
-        cameraState.textContent =
-        "LOADING AI...";
-
-
-        const vision =
-        await import(
-            "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/+esm"
-        );
-
-
-        const {
-            FaceLandmarker,
-            FilesetResolver
-        } = vision;
-
-
-        const filesetResolver =
-        await FilesetResolver.forVisionTasks(
-
-            "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/wasm"
-
-        );
-
-
-        try{
-
-            faceLandmarker =
-            await FaceLandmarker.createFromOptions(
-                filesetResolver,
-                {
-
-                    baseOptions:{
-
-                        modelAssetPath:
-                        "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
-
-                        delegate:
-                        "GPU"
-
-                    },
-
-                    runningMode:
-                    "VIDEO",
-
-                    numFaces:
-                    1
-
-                }
-            );
-
-        }
-
-        catch(gpuError){
-
-            console.warn(
-                "GPU unavailable. Using CPU.",
-                gpuError
-            );
-
-
-            faceLandmarker =
-            await FaceLandmarker.createFromOptions(
-                filesetResolver,
-                {
-
-                    baseOptions:{
-
-                        modelAssetPath:
-                        "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
-
-                        delegate:
-                        "CPU"
-
-                    },
-
-                    runningMode:
-                    "VIDEO",
-
-                    numFaces:
-                    1
-
-                }
-            );
-
-        }
-
-
-        cameraState.textContent =
-        "AI READY";
-
-
-        startEyeDetectionLoop();
-
-    }
-
-    catch(error){
-
-        console.error(
-            "AI LOAD ERROR:",
-            error
-        );
-
-
-        cameraState.textContent =
-        "AI LOAD ERROR";
-
-
-        const eyeState =
-        document.getElementById(
-            "eyeState"
-        );
-
-
-        if(eyeState){
-
-            eyeState.textContent =
-            "AI ERROR - CHECK INTERNET";
-
-        }
-
-    }
-
-}
-
-
-/* =========================================================
-   EYE DETECTION LOOP
-========================================================= */
-
-function startEyeDetectionLoop(){
-
-    if(detectingEyes)
-        return;
-
-
-    detectingEyes =
-    true;
-
-
-    requestAnimationFrame(
-        detectEyesFrame
-    );
-
-}
-
-
-/* =========================================================
-   DETECT EYES FRAME
-========================================================= */
-
-function detectEyesFrame(){
-
-    if(
-        !cameraRunning ||
-        !faceLandmarker
-    ){
-
-        detectingEyes =
         false;
 
+
+    if (cameraStream) {
+
+        cameraStream
+            .getTracks()
+            .forEach(
+                function(track) {
+
+                    track.stop();
+
+                }
+            );
+
+
+        cameraStream =
+            null;
+
+    }
+
+
+    if (driverCamera) {
+
+        driverCamera.srcObject =
+            null;
+
+    }
+
+
+    if (cameraState) {
+
+        cameraState.textContent =
+            "CAMERA OFF";
+
+        cameraState.style.color =
+            "#f44336";
+
+    }
+
+
+    if (eyeState) {
+
+        eyeState.textContent =
+            "EYES: --";
+
+    }
+
+
+    eyesClosedSince =
+        0;
+
+
+    drowsyPhase =
+        "NORMAL";
+
+
+    clearDrowsyUI();
+
+
+    sendCmd(
+        "EYE:CLEAR"
+    );
+
+}
+
+
+/* =====================================================
+   MEDIAPIPE FACE MESH
+===================================================== */
+
+function setupFaceMesh() {
+
+    if (
+        typeof FaceMesh ===
+        "undefined"
+    ) {
+
+        console.error(
+            "MediaPipe FaceMesh not loaded"
+        );
+
+
+        if (cameraState) {
+
+            cameraState.textContent =
+                "FACE MESH ERROR";
+
+            cameraState.style.color =
+                "#f44336";
+
+        }
+
         return;
 
     }
 
 
-    try{
+    faceMesh =
+        new FaceMesh({
 
-        const now =
-        performance.now();
+            locateFile:
+                function(file) {
 
+                    return (
+                        "https://cdn.jsdelivr.net/npm/" +
+                        "@mediapipe/face_mesh/" +
+                        file
+                    );
 
-        const result =
-        faceLandmarker.detectForVideo(
-            cameraVideo,
-            now
-        );
+                }
 
-
-        if(
-            result &&
-            result.faceLandmarks &&
-            result.faceLandmarks.length > 0
-        ){
-
-            const landmarks =
-            result.faceLandmarks[0];
+        });
 
 
-            processEyeState(
-                calculateEyesClosed(
-                    landmarks
-                )
-            );
+    faceMesh.setOptions({
 
-        }
+        maxNumFaces:
+            1,
 
-        else{
+        refineLandmarks:
+            true,
 
-            setEyeStatus(
-                "FACE NOT DETECTED"
-            );
+        minDetectionConfidence:
+            0.5,
 
+        minTrackingConfidence:
+            0.5
 
-            /*
-             * Do not treat this as a camera error.
-             */
-
-            eyesClosedSince =
-            0;
+    });
 
 
-            if(
-                drowsyWarningSent ||
-                drowsyAlertSent
-            ){
-
-                drowsyWarningSent =
-                false;
+    faceMesh.onResults(
+        handleFaceResults
+    );
 
 
-                drowsyAlertSent =
-                false;
+    runFaceDetection();
+
+}
 
 
-                sendCmd(
-                    "EYE:CLEAR"
-                );
+/* =====================================================
+   FACE DETECTION LOOP
+===================================================== */
 
-            }
+async function runFaceDetection() {
 
-        }
+    if (
+        !cameraRunning ||
+        !faceMesh
+    ) {
+
+        return;
 
     }
 
-    catch(error){
 
-        console.warn(
-            "Temporary eye detection issue:",
+    try {
+
+        if (
+            driverCamera &&
+            driverCamera.readyState >= 2
+        ) {
+
+            await faceMesh.send({
+
+                image:
+                    driverCamera
+
+            });
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "FACE DETECTION ERROR:",
             error
         );
 
     }
 
 
-    requestAnimationFrame(
-        detectEyesFrame
-    );
+    if (cameraRunning) {
+
+        requestAnimationFrame(
+            runFaceDetection
+        );
+
+    }
 
 }
 
 
-/* =========================================================
-   3D LANDMARK DISTANCE
-========================================================= */
+/* =====================================================
+   LANDMARK DISTANCE
+===================================================== */
 
-function distance3D(
-    a,
-    b
-){
+function distance(a, b) {
 
     const dx =
-    a.x - b.x;
-
+        a.x - b.x;
 
     const dy =
-    a.y - b.y;
-
-
-    const dz =
-    (
-        a.z || 0
-    )
-    -
-    (
-        b.z || 0
-    );
+        a.y - b.y;
 
 
     return Math.sqrt(
         dx * dx +
-        dy * dy +
-        dz * dz
+        dy * dy
     );
 
 }
 
 
-/* =========================================================
+/* =====================================================
    EYE ASPECT RATIO
-========================================================= */
+===================================================== */
 
-function eyeAspectRatio(
+function calculateEAR(
     landmarks,
     points
-){
+) {
 
     const p1 =
-    landmarks[points[0]];
+        landmarks[points[0]];
 
     const p2 =
-    landmarks[points[1]];
+        landmarks[points[1]];
 
     const p3 =
-    landmarks[points[2]];
+        landmarks[points[2]];
 
     const p4 =
-    landmarks[points[3]];
+        landmarks[points[3]];
 
     const p5 =
-    landmarks[points[4]];
+        landmarks[points[4]];
 
     const p6 =
-    landmarks[points[5]];
-
-
-    if(
-        !p1 ||
-        !p2 ||
-        !p3 ||
-        !p4 ||
-        !p5 ||
-        !p6
-    ){
-
-        return 1;
-
-    }
+        landmarks[points[5]];
 
 
     const vertical1 =
-    distance3D(
-        p2,
-        p6
-    );
+        distance(
+            p2,
+            p6
+        );
 
 
     const vertical2 =
-    distance3D(
-        p3,
-        p5
-    );
+        distance(
+            p3,
+            p5
+        );
 
 
     const horizontal =
-    distance3D(
-        p1,
-        p4
-    );
+        distance(
+            p1,
+            p4
+        );
 
 
-    if(
+    if (
         horizontal === 0
-    ){
+    ) {
 
         return 1;
 
@@ -2074,8 +1953,7 @@ function eyeAspectRatio(
     return (
         vertical1 +
         vertical2
-    )
-    /
+    ) /
     (
         2 *
         horizontal
@@ -2084,495 +1962,167 @@ function eyeAspectRatio(
 }
 
 
-/* =========================================================
-   CALCULATE EYE CLOSURE
-========================================================= */
+/* =====================================================
+   FACE RESULTS
+===================================================== */
 
-function calculateEyesClosed(
-    landmarks
-){
+function handleFaceResults(
+    results
+) {
+
+    if (
+        !results.multiFaceLandmarks ||
+        !results.multiFaceLandmarks.length
+    ) {
+
+        if (eyeState) {
+
+            eyeState.textContent =
+                "FACE NOT DETECTED";
+
+        }
+
+        return;
+
+    }
+
+
+    const landmarks =
+        results.multiFaceLandmarks[0];
+
 
     const leftEAR =
-    eyeAspectRatio(
-        landmarks,
-        LEFT_EYE
-    );
+        calculateEAR(
+            landmarks,
+            [
+                33,
+                160,
+                158,
+                133,
+                153,
+                144
+            ]
+        );
 
 
     const rightEAR =
-    eyeAspectRatio(
-        landmarks,
-        RIGHT_EYE
-    );
+        calculateEAR(
+            landmarks,
+            [
+                362,
+                385,
+                387,
+                263,
+                373,
+                380
+            ]
+        );
 
 
-    const averageEAR =
-    (
-        leftEAR +
-        rightEAR
-    )
-    /
-    2;
+    const ear =
+        (
+            leftEAR +
+            rightEAR
+        ) / 2;
 
 
-    return (
-        averageEAR <
-        CLOSED_THRESHOLD
+    /*
+     * Lower EAR means
+     * more closed eyes.
+     */
+
+    const eyesClosed =
+        ear < 0.22;
+
+
+    processEyeState(
+        eyesClosed
     );
 
 }
 
 
-/* =========================================================
-   PROCESS EYE STATE
-========================================================= */
+/* =====================================================
+   CAMERA BUTTON
+===================================================== */
 
-function processEyeState(
-    eyesClosed
-){
+if (cameraBtn) {
 
-    if(eyesClosed){
+    cameraBtn.addEventListener(
+        "click",
+        function() {
 
-        if(
-            eyesClosedSince === 0
-        ){
+            if (
+                cameraRunning
+            ) {
 
-            eyesClosedSince =
-            Date.now();
+                stopCamera();
 
-        }
+            } else {
 
-
-        const closedTime =
-        Date.now() -
-        eyesClosedSince;
-
-
-        const seconds =
-        closedTime /
-        1000;
-
-
-        const eyeState =
-        document.getElementById(
-            "eyeState"
-        );
-
-
-        const drowsyState =
-        document.getElementById(
-            "drowsyState"
-        );
-
-
-        if(eyeState){
-
-            eyeState.textContent =
-            "EYES: CLOSED";
-
-        }
-
-
-        /*
-         * 2 SECOND WARNING
-         */
-
-        if(
-            closedTime >=
-            EYE_WARN_TIME &&
-            !drowsyWarningSent
-        ){
-
-            drowsyWarningSent =
-            true;
-
-
-            if(drowsyState){
-
-                drowsyState.textContent =
-                "DROWSINESS: WARNING";
-
-            }
-
-
-            if(cameraPanel){
-
-                cameraPanel.classList.add(
-                    "drowsy"
-                );
-
-            }
-
-
-            /*
-             * EXACT ESP32 COMMAND
-             */
-
-            sendCmd(
-                "EYE:WARN"
-            );
-
-
-            console.log(
-                "EYE:WARN SENT"
-            );
-
-        }
-
-
-        /*
-         * Show countdown before warning.
-         */
-
-        if(
-            closedTime <
-            EYE_WARN_TIME
-        ){
-
-            if(drowsyState){
-
-                drowsyState.textContent =
-                "EYES CLOSED " +
-                seconds.toFixed(1) +
-                "s";
+                startCamera();
 
             }
 
         }
-
-
-        /*
-         * 10 SECOND ALERT
-         */
-
-        if(
-            closedTime >=
-            EYE_ALERT_TIME &&
-            !drowsyAlertSent
-        ){
-
-            drowsyAlertSent =
-            true;
-
-
-            if(drowsyState){
-
-                drowsyState.textContent =
-                "DROWSINESS: ALERT";
-
-            }
-
-
-            if(cameraPanel){
-
-                cameraPanel.classList.add(
-                    "drowsy"
-                );
-
-            }
-
-
-            /*
-             * EXACT ESP32 COMMAND
-             */
-
-            sendCmd(
-                "EYE:ALERT"
-            );
-
-
-            console.log(
-                "EYE:ALERT SENT"
-            );
-
-        }
-
-    }
-
-    else{
-
-        /*
-         * Eyes are open.
-         */
-
-        eyesClosedSince =
-        0;
-
-
-        const eyeState =
-        document.getElementById(
-            "eyeState"
-        );
-
-
-        const drowsyState =
-        document.getElementById(
-            "drowsyState"
-        );
-
-
-        if(eyeState){
-
-            eyeState.textContent =
-            "EYES: OPEN";
-
-        }
-
-
-        if(drowsyState){
-
-            drowsyState.textContent =
-            "DROWSINESS: NORMAL";
-
-        }
-
-
-        /*
-         * Tell ESP32 that driver is awake.
-         */
-
-        if(
-            drowsyWarningSent ||
-            drowsyAlertSent
-        ){
-
-            drowsyWarningSent =
-            false;
-
-
-            drowsyAlertSent =
-            false;
-
-
-            sendCmd(
-                "EYE:CLEAR"
-            );
-
-
-            console.log(
-                "EYE:CLEAR SENT"
-            );
-
-        }
-
-
-        if(cameraPanel){
-
-            cameraPanel.classList.remove(
-                "drowsy"
-            );
-
-        }
-
-    }
-
-}
-
-
-/* =========================================================
-   EYE STATUS
-========================================================= */
-
-function setEyeStatus(
-    state
-){
-
-    const eyeState =
-    document.getElementById(
-        "eyeState"
-    );
-
-
-    const drowsyState =
-    document.getElementById(
-        "drowsyState"
-    );
-
-
-    if(eyeState){
-
-        eyeState.textContent =
-        "EYES: " +
-        state;
-
-    }
-
-
-    if(drowsyState){
-
-        if(
-            state ===
-            "FACE NOT DETECTED"
-        ){
-
-            drowsyState.textContent =
-            "FACE: NOT DETECTED";
-
-        }
-
-        else{
-
-            drowsyState.textContent =
-            "DROWSINESS: NORMAL";
-
-        }
-
-    }
-
-}
-
-
-/* =========================================================
-   PAGE SAFETY
-========================================================= */
-
-window.addEventListener(
-    "blur",
-    () => {
-
-        stopDrive();
-
-    }
-);
-
-
-window.addEventListener(
-    "pagehide",
-    () => {
-
-        if(cmdChar){
-
-            sendCmd(
-                "S"
-            );
-
-        }
-
-    }
-);
-
-
-/* =========================================================
-   BROWSER CHECK
-========================================================= */
-
-if(!navigator.bluetooth){
-
-    console.warn(
-        "Web Bluetooth is unavailable."
     );
 
 }
 
 
-if(
-    !navigator.mediaDevices ||
-    !navigator.mediaDevices.getUserMedia
-){
+/* =====================================================
+   BLE CONNECT BUTTON
+===================================================== */
 
-    console.warn(
-        "Camera API is unavailable."
+if (connectBtn) {
+
+    connectBtn.addEventListener(
+        "click",
+        function() {
+
+            connectBLE();
+
+        }
     );
+
+}
+
+
+/* =====================================================
+   INITIAL DASHBOARD STATE
+===================================================== */
+
+updateSpeed(0);
+
+
+if (drowsyState) {
+
+    drowsyState.textContent =
+        "DRIVER NORMAL";
+
+    drowsyState.style.color =
+        "#4caf50";
+
+}
+
+
+if (eyeState) {
+
+    eyeState.textContent =
+        "EYES: --";
+
+}
+
+
+if (cameraState) {
+
+    cameraState.textContent =
+        "CAMERA NOT STARTED";
 
 }
 
 
 console.log(
-    "RC CAR CONTROLLER READY"
+    "RC CAR DASHBOARD READY"
 );
-/* =========================================
-   DROWSINESS WARNING
-========================================= */
-
-const drowsyWarning =
-    document.getElementById("drowsyWarning");
-
-const eyeState =
-    document.getElementById("eyeState");
-
-const drowsyState =
-    document.getElementById("drowsyState");
-
-
-function checkDrowsiness() {
-
-    if (!drowsyWarning) return;
-
-    const eyeText =
-        eyeState
-            ? eyeState.innerText.toUpperCase()
-            : "";
-
-    const drowsyText =
-        drowsyState
-            ? drowsyState.innerText.toUpperCase()
-            : "";
-
-
-    const eyesClosed =
-        eyeText.includes("CLOSED") ||
-        eyeText.includes("CLOSE");
-
-
-    const drowsy =
-        drowsyText.includes("DROWSY") ||
-        drowsyText.includes("WARNING") ||
-        drowsyText.includes("ALERT");
-
-
-    if (eyesClosed || drowsy) {
-
-        drowsyWarning.classList.add("active");
-
-    } else {
-
-        drowsyWarning.classList.remove("active");
-
-    }
-}
-
-
-/* =========================================
-   WATCH CAMERA STATUS
-========================================= */
-
-const drowsyObserver =
-    new MutationObserver(
-        checkDrowsiness
-    );
-
-
-if (eyeState) {
-
-    drowsyObserver.observe(
-        eyeState,
-        {
-            childList: true,
-            characterData: true,
-            subtree: true
-        }
-    );
-
-}
-
-
-if (drowsyState) {
-
-    drowsyObserver.observe(
-        drowsyState,
-        {
-            childList: true,
-            characterData: true,
-            subtree: true
-        }
-    );
-
-}
-
-
-/* =========================================
-   INITIAL CHECK
-========================================= */
-
-checkDrowsiness();
 
