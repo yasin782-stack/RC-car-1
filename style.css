@@ -1,565 +1,1310 @@
+/* =====================================================
+   RC CAR DASHBOARD - style.css
+===================================================== */
+
+
+/* =====================================================
+   GLOBAL
+===================================================== */
+
 * {
     box-sizing: border-box;
-    user-select: none;
-    touch-action: none;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
 }
+
 
 html,
 body {
-    margin: 0;
     width: 100%;
-    height: 100%;
-    background: #000;
-    color: #fff;
-    font-family: Arial, sans-serif;
-    overflow: hidden;
+    min-height: 100%;
 }
+
+
+body {
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    background:
+        #080b10;
+
+    color:
+        #ffffff;
+
+    overflow-x:
+        hidden;
+
+    user-select:
+        none;
+}
+
+
+/* =====================================================
+   MAIN CONTAINER
+===================================================== */
 
 #app {
-    position: relative;
     width: 100%;
-    height: 100%;
-    background:
-        radial-gradient(
-            circle at 30% 60%,
-            #0a1f14 0%,
-            #000 55%
-        ),
-        radial-gradient(
-            circle at 70% 60%,
-            #0a1522 0%,
-            #000 55%
-        );
+    max-width: 1200px;
+    margin: auto;
+    padding: 15px;
 }
 
 
-/* ================================
-   STATUS / BLE
-================================ */
+/* =====================================================
+   HEADER
+===================================================== */
 
-#statusBox {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    z-index: 20;
-    text-align: right;
+header {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 15px;
 }
 
-#status {
-    color: #aaa;
+
+header h1 {
+    font-size: 24px;
+    letter-spacing: 2px;
+}
+
+
+header p {
+    margin-top: 5px;
     font-size: 12px;
-    margin-bottom: 8px;
-}
-
-button {
-    border: none;
-    border-radius: 10px;
-    padding: 10px 16px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-#connectBtn {
-    background: #2196F3;
-    color: white;
+    opacity: 0.65;
 }
 
 
-/* ================================
-   DISTANCE
-================================ */
+/* =====================================================
+   STATUS BAR
+===================================================== */
 
-#distCircle {
-    position: absolute;
-    top: 20px;
-    left: 20px;
+#statusBar {
+    display: grid;
 
-    width: 120px;
-    height: 120px;
+    grid-template-columns:
+        repeat(4, 1fr);
 
-    border-radius: 50%;
+    gap: 8px;
 
-    border: 2px solid #333;
-
-    background: #111;
-
-    display: flex;
-    flex-direction: column;
-
-    align-items: center;
-    justify-content: center;
-
-    z-index: 10;
-}
-
-.distVal {
-    font-size: 20px;
-    font-weight: bold;
-}
-
-.distLabel {
-    color: #777;
-    font-size: 9px;
-}
-
-#distFront {
-    color: #4CAF50;
-}
-
-#distRear {
-    color: #29b6f6;
+    margin-bottom: 15px;
 }
 
 
-/* ================================
+.statusItem {
+    background:
+        #11161d;
+
+    border:
+        1px solid #252d37;
+
+    border-radius:
+        10px;
+
+    padding:
+        10px 6px;
+
+    text-align:
+        center;
+
+    font-size:
+        11px;
+}
+
+
+.statusItem span {
+    display:
+        block;
+
+    margin-top:
+        4px;
+
+    font-weight:
+        bold;
+}
+
+
+/* =====================================================
+   GENERAL PANEL
+===================================================== */
+
+.panel {
+    background:
+        #10151c;
+
+    border:
+        1px solid #252d37;
+
+    border-radius:
+        14px;
+
+    padding:
+        14px;
+
+    margin-bottom:
+        14px;
+}
+
+
+.panelTitle {
+    font-size:
+        12px;
+
+    font-weight:
+        bold;
+
+    letter-spacing:
+        1.5px;
+
+    opacity:
+        0.7;
+
+    margin-bottom:
+        10px;
+}
+
+
+/* =====================================================
+   BLE
+===================================================== */
+
+#blePanel {
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        space-between;
+
+    gap:
+        10px;
+}
+
+
+#bleStatus {
+    font-size:
+        12px;
+
+    color:
+        #f44336;
+
+    font-weight:
+        bold;
+}
+
+
+#connectBLE {
+    border:
+        0;
+
+    border-radius:
+        8px;
+
+    padding:
+        10px 15px;
+
+    background:
+        #1c242e;
+
+    color:
+        #ffffff;
+
+    font-weight:
+        bold;
+
+    cursor:
+        pointer;
+}
+
+
+/* =====================================================
+   TOP DASHBOARD
+===================================================== */
+
+#dashboardGrid {
+    display:
+        grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    gap:
+        14px;
+
+    margin-bottom:
+        14px;
+}
+
+
+/* =====================================================
+   DISTANCE CIRCLES
+===================================================== */
+
+.distanceContainer {
+    display:
+        flex;
+
+    justify-content:
+        space-around;
+
+    align-items:
+        center;
+
+    gap:
+        15px;
+}
+
+
+.distanceCircle {
+    width:
+        100px;
+
+    height:
+        100px;
+
+    border:
+        2px solid #39434e;
+
+    border-radius:
+        50%;
+
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    justify-content:
+        center;
+
+    align-items:
+        center;
+
+    background:
+        #0b0f14;
+}
+
+
+.distanceCircle .distanceValue {
+    font-size:
+        18px;
+
+    font-weight:
+        bold;
+}
+
+
+.distanceCircle .distanceLabel {
+    font-size:
+        9px;
+
+    margin-top:
+        5px;
+
+    opacity:
+        0.6;
+
+    letter-spacing:
+        1px;
+}
+
+
+/* =====================================================
+   GPS
+===================================================== */
+
+#gpsPanel {
+    line-height:
+        1.8;
+}
+
+
+#gpsCoords {
+    font-size:
+        12px;
+
+    word-break:
+        break-all;
+
+    opacity:
+        0.8;
+}
+
+
+/* =====================================================
    MODE
-================================ */
+===================================================== */
 
-#modeToggle {
-    position: absolute;
+#modePanel {
+    display:
+        flex;
 
-    top: 20px;
-    left: 50%;
+    justify-content:
+        space-between;
 
-    transform: translateX(-50%);
-
-    display: flex;
-    gap: 5px;
-
-    z-index: 20;
-
-    background: #111;
-
-    padding: 5px;
-
-    border-radius: 10px;
+    align-items:
+        center;
 }
+
+
+#modeText {
+    font-weight:
+        bold;
+
+    letter-spacing:
+        1px;
+}
+
+
+.modeButtons {
+    display:
+        flex;
+
+    gap:
+        6px;
+}
+
 
 .modeBtn {
-    background: #222;
-    color: #888;
+    border:
+        1px solid #39434e;
+
+    background:
+        #11161d;
+
+    color:
+        #ffffff;
+
+    padding:
+        8px 12px;
+
+    border-radius:
+        7px;
+
+    font-weight:
+        bold;
+
+    cursor:
+        pointer;
 }
+
 
 .modeBtn.active {
-    background: #4CAF50;
-    color: white;
+    background:
+        #26313d;
+
+    border-color:
+        #ffffff;
 }
 
 
-/* ================================
+/* =====================================================
    GAUGES
-================================ */
+===================================================== */
 
-#gaugeRow {
-    position: absolute;
+#gauges {
+    display:
+        flex;
 
-    top: 50%;
-    left: 50%;
+    justify-content:
+        center;
 
-    transform:
-        translate(-50%, -50%);
+    align-items:
+        center;
 
-    display: flex;
+    gap:
+        20px;
 
-    gap: 30px;
-
-    z-index: 5;
+    margin:
+        10px 0 15px;
 }
+
 
 .gauge {
-    position: relative;
+    width:
+        110px;
 
-    width: 220px;
-    height: 220px;
+    height:
+        110px;
 
-    border-radius: 50%;
+    border:
+        2px solid #303943;
 
-    border: 8px solid #333;
+    border-radius:
+        50%;
 
-    background: #111;
+    display:
+        flex;
 
-    box-shadow:
-        0 0 25px #111;
+    flex-direction:
+        column;
+
+    justify-content:
+        center;
+
+    align-items:
+        center;
+
+    background:
+        #0c1117;
 }
 
-.gaugeTitle {
-    position: absolute;
 
-    top: 55px;
+.gaugeValue {
+    font-size:
+        26px;
 
-    width: 100%;
+    font-weight:
+        bold;
 
-    text-align: center;
-
-    color: #888;
-
-    font-size: 15px;
-
-    letter-spacing: 2px;
+    line-height:
+        1;
 }
 
-.gaugeNumber {
-    position: absolute;
-
-    top: 85px;
-
-    width: 100%;
-
-    text-align: center;
-
-    font-size: 45px;
-
-    font-weight: bold;
-}
 
 .gaugeUnit {
-    position: absolute;
+    font-size:
+        9px;
 
-    top: 140px;
+    opacity:
+        0.6;
 
-    width: 100%;
+    margin-top:
+        5px;
 
-    text-align: center;
-
-    color: #888;
-
-    font-size: 12px;
+    letter-spacing:
+        1px;
 }
 
 
-/* ================================
-   STEERING WHEEL
-================================ */
+.gaugeLabel {
+    font-size:
+        9px;
 
-#wheelWrap {
-    position: absolute;
+    opacity:
+        0.55;
 
-    left: 30px;
-    bottom: 30px;
-
-    width: 200px;
-    height: 200px;
-
-    z-index: 10;
-}
-
-#wheel {
-    width: 100%;
-    height: 100%;
-
-    border-radius: 50%;
-
-    border: 10px solid #555;
-
-    background: #151515;
-
-    position: relative;
-
-    transition:
-        transform 0.15s ease;
-}
-
-#wheel:before {
-    content: "";
-
-    position: absolute;
-
-    left: 50%;
-    top: 15%;
-
-    width: 12px;
-    height: 70%;
-
-    transform:
-        translateX(-50%);
-
-    background: #333;
-}
-
-#wheel:after {
-    content: "";
-
-    position: absolute;
-
-    top: 50%;
-    left: 15%;
-
-    width: 70%;
-    height: 12px;
-
-    transform:
-        translateY(-50%);
-
-    background: #333;
-}
-
-#hub {
-    position: absolute;
-
-    left: 50%;
-    top: 50%;
-
-    width: 60px;
-    height: 60px;
-
-    transform:
-        translate(-50%, -50%);
-
-    border-radius: 50%;
-
-    background: #222;
-
-    border: 4px solid #777;
+    margin-top:
+        3px;
 }
 
 
-/* ================================
-   PEDALS
-================================ */
-
-#pedalStack {
-    position: absolute;
-
-    right: 230px;
-    bottom: 30px;
-
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 15px;
-
-    z-index: 10;
-}
-
-.pedal {
-    width: 70px;
-    height: 120px;
-
-    border-radius: 12px;
-
-    background:
-        linear-gradient(
-            #bbb,
-            #444
-        );
-
-    color: #111;
-
-    display: flex;
-
-    justify-content: center;
-
-    align-items: flex-start;
-
-    padding-top: 10px;
-
-    font-weight: bold;
-}
-
-.pedal.active {
-    box-shadow:
-        0 0 20px #4CAF50;
-}
-
-
-/* ================================
-   CAMERA
-================================ */
+/* =====================================================
+   CAMERA PANEL
+===================================================== */
 
 #cameraPanel {
-    position: absolute;
+    width:
+        100%;
 
-    right: 20px;
-    bottom: 20px;
+    max-width:
+        700px;
 
-    width: 190px;
-
-    padding: 8px;
-
-    background: #000e;
-
-    border: 1px solid #444;
-
-    border-radius: 12px;
-
-    z-index: 20;
-
-    text-align: center;
-}
-
-#driverCamera {
-    width: 100%;
-    height: 110px;
-
-    object-fit: cover;
-
-    border-radius: 8px;
-
-    background: #111;
-
-    display: block;
-
-    transform: scaleX(-1);
-}
-
-#cameraState {
-    font-size: 10px;
-
-    color: #aaa;
-
-    margin-top: 5px;
-}
-
-#cameraBtn,
-#switchCamera {
-    width: 100%;
-
-    margin-top: 6px;
-
-    padding: 8px;
-
-    font-size: 10px;
-
-    background: #2196F3;
-
-    color: white;
-}
-
-#switchCamera {
-    background: #444;
-}
-
-
-/* ================================
-   MOBILE
-================================ */
-
-@media (max-width: 700px) {
-
-    #gaugeRow {
-        transform:
-            translate(-50%, -45%)
-            scale(0.75);
-    }
-
-    #wheelWrap {
-        width: 150px;
-        height: 150px;
-    }
-
-    #pedalStack {
-        right: 20px;
-    }
-
-    #cameraPanel {
-        width: 150px;
-    }
-
-}
-
-/* ===============================
-   DROWSINESS WARNING
-================================ */
-
-#drowsyWarning {
-    position: fixed;
-    inset: 0;
-    z-index: 95;
-
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-
-    pointer-events: none;
-
-    opacity: 0;
-    visibility: hidden;
+    margin:
+        0 auto 15px;
 
     background:
-        radial-gradient(
-            circle,
-            transparent 35%,
-            rgba(255, 0, 0, 0.08) 65%,
-            rgba(255, 0, 0, 0.28) 100%
-        );
+        #0d1218;
 
-    transition: opacity 0.3s ease,
-                visibility 0.3s ease;
+    border:
+        2px solid #29323c;
+
+    border-radius:
+        14px;
+
+    padding:
+        10px;
+
+    transition:
+        0.2s;
 }
+
+
+#cameraPanel.drowsy {
+    border-color:
+        #f44336;
+
+    box-shadow:
+        0 0 20px rgba(244, 67, 54, 0.25);
+}
+
+
+#driverCamera {
+    display:
+        block;
+
+    width:
+        100%;
+
+    max-height:
+        430px;
+
+    object-fit:
+        cover;
+
+    background:
+        #000000;
+
+    border-radius:
+        10px;
+
+    transform:
+        scaleX(-1);
+}
+
+
+#cameraInfo {
+    display:
+        grid;
+
+    grid-template-columns:
+        1fr 1fr 1fr;
+
+    gap:
+        6px;
+
+    margin-top:
+        8px;
+}
+
+
+.cameraStatus {
+    background:
+        #151b22;
+
+    border-radius:
+        7px;
+
+    padding:
+        8px 4px;
+
+    text-align:
+        center;
+
+    font-size:
+        10px;
+}
+
+
+#cameraState {
+    color:
+        #f44336;
+}
+
+
+#eyeState {
+    color:
+        #ffffff;
+}
+
+
+#drowsyState {
+    color:
+        #4caf50;
+
+    font-weight:
+        bold;
+}
+
+
+/* =====================================================
+   CAMERA BUTTON
+===================================================== */
+
+#cameraBtn {
+    width:
+        100%;
+
+    margin-top:
+        8px;
+
+    padding:
+        10px;
+
+    border:
+        0;
+
+    border-radius:
+        8px;
+
+    background:
+        #1b232d;
+
+    color:
+        #ffffff;
+
+    font-weight:
+        bold;
+
+    cursor:
+        pointer;
+}
+
+
+/* =====================================================
+   CONTROL AREA
+===================================================== */
+
+#controls {
+    display:
+        grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    gap:
+        25px;
+
+    align-items:
+        center;
+
+    margin-top:
+        10px;
+
+    margin-bottom:
+        15px;
+}
+
+
+/* =====================================================
+   LEFT STEERING
+===================================================== */
+
+#steeringButtons {
+    display:
+        flex;
+
+    justify-content:
+        center;
+
+    align-items:
+        center;
+
+    gap:
+        12px;
+}
+
+
+.steerBtn {
+    width:
+        95px;
+
+    height:
+        75px;
+
+    border:
+        2px solid #303943;
+
+    border-radius:
+        12px;
+
+    background:
+        #151b22;
+
+    color:
+        #ffffff;
+
+    font-size:
+        13px;
+
+    font-weight:
+        bold;
+
+    cursor:
+        pointer;
+
+    touch-action:
+        none;
+
+    transition:
+        0.12s;
+}
+
+
+.steerBtn:active,
+.steerBtn.active {
+    background:
+        #26313d;
+
+    border-color:
+        #ffffff;
+
+    transform:
+        scale(0.96);
+}
+
+
+/* =====================================================
+   RIGHT DRIVE
+===================================================== */
+
+#driveButtons {
+    display:
+        flex;
+
+    justify-content:
+        center;
+
+    align-items:
+        center;
+
+    gap:
+        12px;
+}
+
+
+.driveBtn {
+    width:
+        105px;
+
+    height:
+        80px;
+
+    border:
+        2px solid #303943;
+
+    border-radius:
+        12px;
+
+    background:
+        #151b22;
+
+    color:
+        #ffffff;
+
+    font-size:
+        12px;
+
+    font-weight:
+        bold;
+
+    cursor:
+        pointer;
+
+    touch-action:
+        none;
+
+    transition:
+        0.12s;
+}
+
+
+.driveBtn:active,
+.driveBtn.active {
+    background:
+        #26313d;
+
+    border-color:
+        #ffffff;
+
+    transform:
+        scale(0.96);
+}
+
+
+/* =====================================================
+   SPORT MODE
+===================================================== */
+
+.driveBtn.sport {
+    border-color:
+        #e53935;
+}
+
+
+.driveBtn.sport:active,
+.driveBtn.sport.active {
+    background:
+        #e53935;
+
+    border-color:
+        #ff6b66;
+}
+
+
+/* =====================================================
+   OBSTACLE WARNING
+===================================================== */
+
+#obstacleWarning {
+    display:
+        none;
+
+    width:
+        100%;
+
+    max-width:
+        600px;
+
+    margin:
+        10px auto;
+
+    padding:
+        14px;
+
+    text-align:
+        center;
+
+    background:
+        #351313;
+
+    border:
+        2px solid #f44336;
+
+    border-radius:
+        10px;
+
+    color:
+        #ff5c5c;
+
+    font-weight:
+        bold;
+
+    font-size:
+        13px;
+}
+
+
+#obstacleWarning.active {
+    display:
+        block;
+}
+
+
+.warningIcon {
+    font-size:
+        25px;
+
+    margin-bottom:
+        5px;
+}
+
+
+.warningTitle {
+    font-size:
+        15px;
+
+    letter-spacing:
+        1px;
+}
+
+
+#warningText {
+    margin-top:
+        5px;
+
+    font-size:
+        11px;
+
+    opacity:
+        0.9;
+}
+
+
+/* =====================================================
+   DROWSINESS WARNING
+===================================================== */
+
+#drowsyWarning {
+    position:
+        fixed;
+
+    inset:
+        0;
+
+    display:
+        none;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    padding:
+        20px;
+
+    background:
+        rgba(0, 0, 0, 0.78);
+
+    z-index:
+        9999;
+}
+
 
 #drowsyWarning.active {
-    opacity: 1;
-    visibility: visible;
-
-    animation: drowsyPulse 1.8s ease-in-out infinite;
+    display:
+        flex;
 }
 
-#drowsyWarningIcon {
-    font-size: 70px;
 
-    animation:
-        warningIconPulse 1.8s ease-in-out infinite;
+.drowsyBox {
+    width:
+        min(90%, 420px);
+
+    padding:
+        30px 20px;
+
+    text-align:
+        center;
+
+    background:
+        #260f0f;
+
+    border:
+        3px solid #f44336;
+
+    border-radius:
+        16px;
+
+    box-shadow:
+        0 0 35px rgba(244, 67, 54, 0.35);
 }
 
-#drowsyWarningText {
-    margin-top: 12px;
 
-    font-size: 28px;
-    font-weight: 900;
-    letter-spacing: 3px;
+.drowsyIcon {
+    font-size:
+        42px;
 
-    color: red;
-
-    text-shadow:
-        0 0 10px red,
-        0 0 25px red;
+    margin-bottom:
+        10px;
 }
 
-#drowsyWarningSub {
-    margin-top: 8px;
 
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: 2px;
+.drowsyTitle {
+    color:
+        #f44336;
 
-    color: white;
+    font-size:
+        25px;
+
+    font-weight:
+        bold;
+
+    letter-spacing:
+        2px;
 }
 
-@keyframes drowsyPulse {
 
-    0% {
-        box-shadow:
-            inset 0 0 0 rgba(255,0,0,0);
-    }
+.drowsyMessage {
+    margin-top:
+        10px;
 
-    50% {
-        box-shadow:
-            inset 0 0 80px rgba(255,0,0,0.35);
-    }
+    font-size:
+        13px;
 
-    100% {
-        box-shadow:
-            inset 0 0 0 rgba(255,0,0,0);
-    }
+    opacity:
+        0.8;
 }
 
-@keyframes warningIconPulse {
 
-    0% {
-        transform: scale(1);
-        opacity: 0.7;
-    }
+.drowsyStop {
+    margin-top:
+        18px;
 
-    50% {
-        transform: scale(1.15);
-        opacity: 1;
-    }
+    color:
+        #ffffff;
 
-    100% {
-        transform: scale(1);
-        opacity: 0.7;
-    }
+    font-weight:
+        bold;
+
+    font-size:
+        13px;
 }
 
+
+/* =====================================================
+   GSM / SMS
+===================================================== */
+
+#communicationPanel {
+    display:
+        grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    gap:
+        10px;
+
+    margin-bottom:
+        15px;
+}
+
+
+.communicationItem {
+    background:
+        #11161d;
+
+    border:
+        1px solid #252d37;
+
+    border-radius:
+        10px;
+
+    padding:
+        12px;
+
+    text-align:
+        center;
+
+    font-size:
+        11px;
+}
+
+
+.communicationItem span {
+    display:
+        block;
+
+    margin-top:
+        5px;
+
+    font-weight:
+        bold;
+}
+
+
+/* =====================================================
+   GPS / SMS BUTTONS
+===================================================== */
+
+.actionButtons {
+    display:
+        flex;
+
+    gap:
+        10px;
+
+    justify-content:
+        center;
+
+    margin-top:
+        10px;
+}
+
+
+.actionBtn {
+    border:
+        1px solid #303943;
+
+    border-radius:
+        8px;
+
+    background:
+        #151b22;
+
+    color:
+        #ffffff;
+
+    padding:
+        9px 14px;
+
+    font-weight:
+        bold;
+
+    cursor:
+        pointer;
+}
+
+
+/* =====================================================
+   FOOTER
+===================================================== */
+
+footer {
+    text-align:
+        center;
+
+    margin-top:
+        15px;
+
+    padding:
+        10px;
+
+    font-size:
+        10px;
+
+    opacity:
+        0.45;
+}
+
+
+/* =====================================================
+   TOUCH CONTROL
+===================================================== */
+
+button {
+    -webkit-user-select:
+        none;
+
+    user-select:
+        none;
+
+    -webkit-touch-callout:
+        none;
+}
+
+
+button:focus {
+    outline:
+        none;
+}
+
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (
+    max-width: 700px
+) {
+
+    #app {
+        padding:
+            10px;
+    }
+
+
+    header h1 {
+        font-size:
+            20px;
+    }
+
+
+    #statusBar {
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+
+    #dashboardGrid {
+        grid-template-columns:
+            1fr;
+    }
+
+
+    #controls {
+        grid-template-columns:
+            1fr 1fr;
+
+        gap:
+            10px;
+    }
+
+
+    #steeringButtons,
+    #driveButtons {
+        gap:
+            7px;
+    }
+
+
+    .steerBtn {
+        width:
+            80px;
+
+        height:
+            70px;
+    }
+
+
+    .driveBtn {
+        width:
+            88px;
+
+        height:
+            75px;
+    }
+
+
+    .gauge {
+        width:
+            95px;
+
+        height:
+            95px;
+    }
+
+
+    .gaugeValue {
+        font-size:
+            22px;
+    }
+
+
+    .distanceCircle {
+        width:
+            85px;
+
+        height:
+            85px;
+    }
+
+
+    #cameraInfo {
+        grid-template-columns:
+            1fr;
+    }
+
+}
+
+
+/* =====================================================
+   VERY SMALL PHONES
+===================================================== */
+
+@media (
+    max-width: 400px
+) {
+
+    #controls {
+        gap:
+            5px;
+    }
+
+
+    .steerBtn {
+        width:
+            72px;
+
+        height:
+            65px;
+
+        font-size:
+            11px;
+    }
+
+
+    .driveBtn {
+        width:
+            78px;
+
+        height:
+            70px;
+
+        font-size:
+            10px;
+    }
+
+
+    .gauge {
+        width:
+            85px;
+
+        height:
+            85px;
+    }
+
+
+    .gaugeValue {
+        font-size:
+            20px;
+    }
+
+}
