@@ -10,6 +10,7 @@
 <body>
   <main id="app" aria-label="RC car dashboard">
     <header class="topbar">
+      <button id="menuOpenBtn" class="menu-open" type="button" aria-label="Open dashboard menu" aria-controls="sideDrawer" aria-expanded="false">☰<span>MENU</span></button>
       <section class="distance-strip panel" aria-label="Vehicle distances">
         <div id="frontCard" class="distance-card front"><span>FRONT CM</span><strong id="distFront">--</strong></div>
         <div class="distance-divider"></div>
@@ -35,11 +36,13 @@
 
     <section class="dashboard-layout" aria-label="Driving dashboard">
       <section id="drivePanel" class="panel drive-panel">
-        <div class="mode-row" aria-label="Driving mode"><button id="ecoBtn" class="mode-btn active" type="button">ECO</button><button id="sportBtn" class="mode-btn" type="button">SPORT</button></div>
+        <div class="mode-row" aria-label="Driving mode"><button id="ecoBtn" class="mode-btn active" type="button">ECO</button><button id="sportBtn" class="mode-btn" type="button">SPORT</button><button id="parkingBtn" class="mode-btn parking-btn" type="button" aria-pressed="false">PARKING</button></div>
         <div class="gauge-row">
-          <div id="speedGauge" class="gauge speed-gauge"><div class="gauge-face"><span class="gauge-title">SPEED</span><strong id="speedNum">0</strong><small>KM/H</small></div></div>
-          <div id="rpmGauge" class="gauge rpm-gauge"><div class="gauge-face"><span class="gauge-title">RPM</span><strong id="rpmNum">0</strong><small>RPM</small></div></div>
+          <div id="speedGauge" class="gauge digital-gauge speed-gauge"><div class="gauge-face"><span class="gauge-title">SPEED · WEB CONTROL</span><strong id="speedNum">0</strong><small>KM/H</small></div></div>
+          <div id="rpmGauge" class="gauge digital-gauge rpm-gauge"><div class="gauge-face"><span class="gauge-title">RPM · WEB CONTROL</span><strong id="rpmNum">0</strong><small>RPM</small></div></div>
         </div>
+        <div class="drive-readout" aria-label="Drive and obstacle status"><div><span>DIRECTION</span><strong id="driveDirection">STOPPED</strong></div><div><span>OBSTACLE DETECTION</span><strong id="obstacleReadout">CLEAR</strong></div></div>
+        <div class="connectivity-screen" aria-label="Connection and messaging status"><div><span>BLUETOOTH</span><strong id="screenBleStatus" class="screen-neutral">DISCONNECTED</strong></div><div><span>GPS</span><strong id="screenGpsStatus" class="screen-neutral">NO FIX</strong></div><div><span>GSM</span><strong id="screenGsmStatus" class="screen-neutral">UNKNOWN</strong></div><div><span>SMS</span><strong id="screenSmsStatus" class="screen-neutral">READY</strong></div></div>
         <div id="obstacleWarning" class="warning" role="alert">⚠ OBSTACLE DETECTED — VEHICLE STOPPED</div>
       </section>
 
@@ -62,6 +65,26 @@
       </section>
     </section>
   </main>
+  <div id="drawerBackdrop" class="drawer-backdrop" hidden></div>
+  <aside id="sideDrawer" class="side-drawer" aria-label="Dashboard navigation" aria-hidden="true" inert>
+    <div class="drawer-heading"><strong>RC CAR MENU</strong><button id="menuCloseBtn" type="button" aria-label="Close menu">×</button></div>
+    <nav aria-label="Dashboard sections">
+      <button type="button" data-panel="dashboard">🏠 <span>Dashboard</span></button>
+      <button type="button" data-panel="telemetry">📊 <span>Live Telemetry</span></button>
+      <button type="button" data-panel="safety">🛡 <span>Safety Status</span></button>
+      <button type="button" data-panel="events">⚠ <span>Event Log</span></button>
+      <button type="button" data-panel="ble">📡 <span>BLE / Connection</span></button>
+      <button type="button" data-panel="gps">📍 <span>GPS Information</span></button>
+      <button type="button" data-panel="driver">📷 <span>Driver Monitor</span></button>
+      <button type="button" data-panel="project">ℹ <span>Project Info</span></button>
+    </nav>
+  </aside>
+  <div id="panelOverlay" class="panel-overlay" hidden>
+    <section class="info-panel panel" role="dialog" aria-modal="true" aria-labelledby="panelTitle">
+      <header><h2 id="panelTitle">PANEL</h2><button id="panelCloseBtn" type="button" aria-label="Close panel">×</button></header>
+      <div id="panelContent" class="panel-content"></div>
+    </section>
+  </div>
   <div id="drowsyWarning" class="drowsy-warning" role="alert"><div><strong>⚠ SLEEPY DRIVER</strong><span>VEHICLE STOPPED — STAY ALERT</span></div></div>
   <script src="script.js?v=5"></script>
 </body>
